@@ -21,16 +21,14 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.14'
-
       - name: Setup uv
         uses: astral-sh/setup-uv@v9.0.0
         with:
           enable-cache: true
           cache-dependency-glob: tools/uv.lock
+
+      - name: Set up Python
+        run: uv python install   # honors tools/.python-version (3.14)
 
       - name: Azure login (Entra workload identity federation)
         uses: azure/login@v2
