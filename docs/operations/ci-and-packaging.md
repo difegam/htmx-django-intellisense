@@ -30,8 +30,4 @@ Run `npm run capture-screenshots` before packaging when an editor interaction ch
 
 ## Test the artifact
 
-```bash
-code --install-extension htmx-django-intellisense-*.vsix --force
-```
-
-Open an HTML file and a Django HTML template, then verify `hx-` completion, `data-hx-*` aliases, hover on a known attribute, no hover on an ordinary HTML attribute, diagnostics, a diagnostic quick fix (`Ctrl/Cmd+.`), local partial completion, and partial rename (`F2`).
+After packaging, sideload the VSIX and run the interactive smoke checklist locally. The commands and checklist are documented in [Local Extension Testing](local-extension-testing.md).

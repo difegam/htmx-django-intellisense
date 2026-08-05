@@ -2,6 +2,8 @@
 
 Define, render, complete, and navigate Django 6 partials in templates and Python views.
 
+[Template partials](https://docs.djangoproject.com/en/6.0/ref/templates/language/#template-partials) are built into Django 6.0. The feature originated from Carlton Gibson's [django-template-partials](https://github.com/carltongibson/django-template-partials) package before landing in Django core.
+
 ## Define a partial
 
 ```django

@@ -11,14 +11,14 @@ uv sync --project tools --frozen --all-groups
 
 ## Choose the source of truth
 
-| Change                                     | Primary location                                |
-| ------------------------------------------ | ----------------------------------------------- |
+| Change                                     | Primary location                                                        |
+| ------------------------------------------ | ----------------------------------------------------------------------- |
 | Attribute or version metadata              | `tools/src/htmx_django_intellisense/catalog.py` and `htmx.catalog.json` |
-| Name parsing or Django partial recognition | `src/scanner.ts`                                |
-| Resolution rules                           | `src/catalog.ts`                                |
-| Validation behavior                        | `src/diagnostics.ts`                            |
-| VS Code provider behavior                  | `src/extension.ts`                              |
-| Django snippet                             | `snippets/django-htmx.source.json`              |
+| Name parsing or Django partial recognition | `src/scanner.ts`                                                        |
+| Resolution rules                           | `src/catalog.ts`                                                        |
+| Validation behavior                        | `src/diagnostics.ts`                                                    |
+| VS Code provider behavior                  | `src/extension.ts`                                                      |
+| Django snippet                             | `snippets/django-htmx.source.json`                                      |
 
 Add or update the focused Node or Python test that fails before the change. Regenerate the HTMX
 catalog only when its generator inputs or metadata change. Run `npm run build-snippets` after a
@@ -35,6 +35,8 @@ npm run package
 ```
 
 `npm test` runs TypeScript unit tests and Python generator/manifest tests. `npm run test:extension` launches extension-host smoke tests for both supported language modes. Packaging confirms the installed artifact contains runtime files, catalog, snippets, and presentation assets rather than source and docs.
+
+For a complete walkthrough of F5 debugging, VSIX sideloading, and troubleshooting, see [Local Extension Testing](../operations/local-extension-testing.md).
 
 ## Refresh demo assets
 

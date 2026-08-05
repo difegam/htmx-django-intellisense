@@ -7,6 +7,26 @@ diagnostics, and Django 6 partial support to HTML, Django templates, and Python 
 
 [Install from the Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=difegam.htmx-django-intellisense)
 
+<p align="center">
+  <a href="https://marketplace.visualstudio.com/items?itemName=difegam.htmx-django-intellisense">
+    <img src="https://img.shields.io/badge/Installs-unpublished-0C4B33" alt="Installs">
+  </a>
+  <a href="https://marketplace.visualstudio.com/items?itemName=difegam.htmx-django-intellisense">
+    <img src="https://img.shields.io/badge/Rating-unpublished-0C4B33" alt="Rating">
+  </a>
+  <a href="https://github.com/difegam/htmx-django-intellisense/blob/main/LICENSE.txt">
+    <img src="https://img.shields.io/badge/license-Apache%202.0-0C4B33" alt="License">
+  </a>
+  <img src="https://img.shields.io/badge/HTMX-2%20%2F%204-0C4B33" alt="HTMX 2 / 4">
+  <br>
+  <a href="https://marketplace.visualstudio.com/items?itemName=difegam.htmx-django-intellisense">
+    <img src="https://img.shields.io/badge/VS%20Marketplace-v0.1.0-0C4B33" alt="VS Marketplace Version">
+  </a>
+  <a href="https://open-vsx.org/extension/difegam/htmx-django-intellisense">
+    <img src="https://img.shields.io/badge/Open%20VSX-v0.1.0-0C4B33" alt="Open VSX Version">
+  </a>
+</p>
+
 ## Install and use
 
 1. Open **Extensions** in VS Code (`Ctrl/Cmd+Shift+X`).
@@ -55,6 +75,8 @@ Django template support uses the [Django extension](https://marketplace.visualst
 Every diagnostic ships a quick fix (the `Ctrl/Cmd+.` lightbulb): a misspelled `hx-` attribute suggests its nearest catalog name, a deprecated attribute offers its documented successor, an invalid documented value offers the allowed values, and an unknown partial offers a matching name or a `{% partialdef %}` stub.
 
 ## Built for Django templates
+
+[Template partials](https://docs.djangoproject.com/en/6.0/ref/templates/language/#template-partials) ship natively in Django 6.0. This extension understands their `{% partialdef %}`/`{% partial %}` tags out of the box.
 
 Definitions in the current template are offered after `{% partial `:
 
@@ -135,7 +157,7 @@ Read the [full documentation](docs/index.md) for setup, HTMX authoring, partials
 
 ## Project history
 
-This project started from [otovo/htmx-tags](https://github.com/otovo/htmx-tags), which offered plain HTMX tag completion for HTML files. It has since diverged into an independent, Django-focused toolchain: a dual-version (HTMX 2/4) offline catalog with diagnostics and quick fixes, and Django 6 `{% partialdef %}`/`{% partial %}` IntelliSense modeled on [django-template-partials](https://github.com/carltongibson/django-template-partials) — none of which exists in the original project or in other generic HTMX completion extensions.
+This project started from [otovo/htmx-tags](https://github.com/otovo/htmx-tags), which offered plain HTMX tag completion for HTML files. It has since diverged into an independent, Django-focused toolchain: a dual-version (HTMX 2/4) offline catalog with diagnostics and quick fixes, and IntelliSense for Django 6.0's built-in [`{% partialdef %}`/`{% partial %}` template partials](https://docs.djangoproject.com/en/6.0/ref/templates/language/#template-partials) — a feature that originated from [django-template-partials](https://github.com/carltongibson/django-template-partials) by Carlton Gibson before landing in Django core — none of which exists in the original project or in other generic HTMX completion extensions.
 
 ## License
 

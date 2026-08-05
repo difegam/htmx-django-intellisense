@@ -1,6 +1,6 @@
 # HTMX Django IntelliSense
 
-Documentation for the VS Code extension that provides offline HTMX IntelliSense and Django 6 partial completion and navigation across templates and Python views.
+Documentation for the VS Code extension that provides offline HTMX IntelliSense and [Django 6 template partial](https://docs.djangoproject.com/en/6.0/ref/templates/language/#template-partials) completion and navigation across templates and Python views.
 
 ![HTMX attribute completion in VS Code](assets/images/attribute-completions.gif)
 
@@ -39,5 +39,5 @@ The installed extension runs locally in VS Code. It reads the committed catalog 
 - [Explanation](explanation/index.md) describes the offline runtime model and compatibility behavior.
 - [Tutorials](tutorials/index.md) cover local docs and extension contribution workflows.
 - [How-to Guides](how-to/index.md) solve common authoring, configuration, and partial tasks.
-- [Operations](operations/index.md) covers CI, VSIX inspection, and releases.
+- [Operations](operations/index.md) covers local testing, CI, VSIX inspection, and releases.
 - [Reference](reference/index.md) lists settings, catalog syntax, and snippets.
