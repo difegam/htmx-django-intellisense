@@ -1,7 +1,7 @@
 [project]
 name = "htmx-django-intellisense"
 version = "0.1.0"
-description = "Developer tooling for HTMX Tags for Django"
+description = "Developer tooling for HTMX Django IntelliSense"
 readme = "README.md"
 authors = [{ name = "Diego Gamboa", email = "difegam3@gmail.com" }]
 requires-python = ">=3.14"
@@ -13,7 +13,7 @@ dependencies = [
 ]
 
 [project.scripts]
-htmx-django-intellisense = "htmx_django_intellisense:main"
+htmx-tools = "htmx_django_intellisense.cli:app"
 
 [build-system]
 requires = ["uv_build>=0.11.21,<0.12.0"]
@@ -25,5 +25,39 @@ docs = ["zensical>=0.0.53"]
 
 [tool.uv]
 default-groups = ["dev"]
-exclude-newer = "P7D"
-exclude-newer-package = { zensical = false }
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+indent-width = 4
+target-version = "py314"
+force-exclude = true
+extend-exclude = [
+    ".venv",
+    ".vscode-test",
+    "logs",
+    "__pycache__",
+    "build",
+    "dist",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "PTH", "C4", "PERF", "RUF", "S"]
+fixable = ["ALL"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true
+docstring-code-line-length = "dynamic"
+
+[tool.ruff.lint.per-file-ignores]
+"src/htmx_django_intellisense/catalog.py" = ["E501"]
+"tests/*" = ["S101"]
+
+[tool.pyrefly]
+project-includes = ["src", "tests"]
+python-version = "3.14"

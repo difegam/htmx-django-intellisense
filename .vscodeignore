@@ -1,0 +1,49 @@
+.vscode/**
+.vscode-test/**
+src/**
+scripts/**
+.gitignore
+.yarnrc
+vsc-extension-quickstart.md
+**/tsconfig.json
+**/.eslintrc.json
+**/*.map
+**/*.ts
+esbuild.js
+
+# Only the esbuild bundle in dist/ ships; the tsc build in out/ is for tests.
+out/**
+
+# Git and CI
+.git/**
+.github/**
+
+# Python project, local environments, and caches
+tools/**
+.venv/**
+**/__pycache__/**
+*.pyc
+.python-version
+.cache/**
+.pytest_cache/**
+.ruff_cache/**
+.pyrefly_cache/
+
+# Development and test-only files
+examples/**
+docs/**
+AGENTS.md
+site/**
+snippets/*.source.json
+.pre-commit-config.yaml
+zensical.toml
+justfile
+
+# Node/tooling files not needed at runtime
+node_modules/**
+package-lock.json
+eslint.config.mjs
+
+# Media/demo assets not required for runtime
+demo-1.png
+demo-2.png

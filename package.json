@@ -1,0 +1,126 @@
+{
+  "name": "htmx-django-intellisense",
+  "displayName": "HTMX Django IntelliSense",
+  "description": "Offline HTMX 2/4 IntelliSense, diagnostics, snippets, and Django 6 template partials for VS Code.",
+  "version": "0.1.0",
+  "publisher": "difegam",
+  "license": "Apache-2.0",
+  "preview": true,
+  "extensionKind": ["ui"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/difegam/htmx-django-intellisense"
+  },
+  "homepage": "https://github.com/difegam/htmx-django-intellisense",
+  "bugs": {
+    "url": "https://github.com/difegam/htmx-django-intellisense/issues"
+  },
+  "engines": {
+    "vscode": "^1.90.0",
+    "node": "^20.19.0 || ^22.12.0 || >=24"
+  },
+  "categories": [
+    "Programming Languages",
+    "Snippets",
+    "Linters"
+  ],
+  "keywords": [
+    "htmx",
+    "htmx 2",
+    "htmx 4",
+    "html",
+    "django",
+    "django templates",
+    "django partials",
+    "templates",
+    "partials",
+    "intellisense",
+    "autocomplete",
+    "diagnostics",
+    "snippets"
+  ],
+  "activationEvents": [
+    "onLanguage:html",
+    "onLanguage:django-html",
+    "onLanguage:python"
+  ],
+  "main": "./dist/extension.js",
+  "icon": "images/icon.png",
+  "galleryBanner": {
+    "color": "#0C4B33",
+    "theme": "dark"
+  },
+  "contributes": {
+    "configuration": {
+      "title": "HTMX Django IntelliSense",
+      "properties": {
+        "htmxTags.enableCompletion": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable HTMX and Django partial completions."
+        },
+        "htmxTags.enableHover": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable HTMX and Django partial hover documentation."
+        },
+        "htmxTags.enableValidation": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable HTMX and same-file Django partial diagnostics."
+        },
+        "htmxTags.version": {
+          "type": "string",
+          "enum": [
+            "compatible",
+            "2",
+            "4"
+          ],
+          "enumDescriptions": [
+            "Accept the HTMX 2 and HTMX 4 union.",
+            "Prefer HTMX 2 and hint when HTMX 4-only syntax is used.",
+            "Prefer HTMX 4 and hint when HTMX 2-only syntax is used."
+          ],
+          "default": "compatible",
+          "description": "Select the HTMX compatibility mode."
+        }
+      }
+    },
+    "snippets": [
+      {
+        "language": "django-html",
+        "path": "./snippets/django-htmx.json"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run check-types && npm run bundle",
+    "bundle": "node esbuild.js --production",
+    "bundle:watch": "node esbuild.js --watch",
+    "compile": "tsc -p ./",
+    "lint": "eslint .",
+    "check-types": "tsc -p ./ --noEmit --incremental false",
+    "build-data": "uv run --project tools htmx-tools build-data",
+    "build-snippets": "uv run --project tools htmx-tools build-snippets",
+    "check-snippets": "uv run --project tools htmx-tools build-snippets --check",
+    "test": "npm run test:unit && npm run check-snippets && uv run --project tools pytest -c tools/pyproject.toml tools/tests",
+    "test:unit": "npm run compile && node --test out/test/*.test.js",
+    "test:extension": "npm run compile && npm run bundle && node out/test/runTest.js",
+    "capture-screenshots": "bash scripts/regenerate-demo-assets.sh",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.3",
+    "@types/vscode": "^1.90.0",
+    "@typescript-eslint/eslint-plugin": "~8.55.0",
+    "@typescript-eslint/parser": "~8.55.0",
+    "@vscode/test-electron": "^2.5.2",
+    "@vscode/vsce": "^3.6.2",
+    "esbuild": "^0.28.1",
+    "eslint": "^9.26.0",
+    "typescript": "^5.8.3"
+  },
+  "extensionDependencies": [
+    "batisteo.vscode-django"
+  ]
+}
