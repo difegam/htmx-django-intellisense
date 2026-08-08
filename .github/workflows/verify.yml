@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v9.0.0
+        with:
+          enable-cache: true
+          cache-dependency-glob: tools/uv.lock
+
+      - name: Set up Python
+        run: uv python install   # honors tools/.python-version (3.14)
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Install Python dependencies
+        run: uv sync --project tools --frozen --all-groups
+
+      - name: Lint TypeScript
+        run: npm run lint
+
+      - name: Type-check TypeScript
+        run: npm run check-types
+
+      - name: Lint Python
+        run: |
+          uv run --project tools ruff check tools
+          uv run --project tools ruff format --check tools
+
+      - name: Type-check Python
+        run: uv run --project tools pyrefly check --config tools/pyproject.toml
+
+      - name: Validate extension data
+        run: uv run --project tools pytest -c tools/pyproject.toml tools/tests
+
+      - name: Run TypeScript unit tests
+        run: npm run test:unit
+
+      - name: Verify generated artifacts are current
+        run: |
+          npm run build-data
+          npm run build-snippets
+          git diff --exit-code -- \
+            htmx.catalog.json \
+            snippets/django-htmx.json \
+            docs/reference/snippets.md
+
+      - name: Verify HTMX pins are current
+        run: uv run --project tools htmx-tools check-pins
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Run VS Code extension-host tests
+        run: xvfb-run -a npm run test:extension
+
+      - name: Package and inspect VSIX
+        run: |
+          npm run package
+          npx vsce ls --tree
+
+      - name: Build Python package
+        run: uv build --project tools

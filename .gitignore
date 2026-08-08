@@ -1,12 +1,16 @@
 node_modules/
 out/
 dist/
+build/
+tools/dist/
+tools/build/
 .venv/
 .pytest_cache/
 .ruff_cache/
-.ty_cache/
+.pyrefly_cache/
 .vscode-test/
 .DS_Store
 __pycache__/
 *.vsix
 site/*
+.cache/
