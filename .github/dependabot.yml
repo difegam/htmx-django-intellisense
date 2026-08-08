@@ -10,8 +10,8 @@ updates:
         dependency-type: development
     open-pull-requests-limit: 5
 
-  # Python tooling under tools/ (uv-managed, pip ecosystem reads pyproject.toml)
-  - package-ecosystem: pip
+  # Python tooling under tools/ (uv-managed, uv.lock as the lockfile)
+  - package-ecosystem: uv
     directory: "/tools"
     schedule:
       interval: weekly

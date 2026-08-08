@@ -21,6 +21,7 @@ export async function run(): Promise<void> {
     document.uri,
     new vscode.Position(0, 7),
   );
+  assert.ok(completions, "completion provider returned a result");
   assert.ok(
     completions.items.some((item) => labelOf(item) === "hx-get"),
     "packaged extension provides the hx-get completion",
