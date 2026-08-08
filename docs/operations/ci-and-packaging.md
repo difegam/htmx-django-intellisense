@@ -4,7 +4,7 @@ The CI workflow verifies source quality, catalog determinism, extension-host beh
 
 ## CI checks
 
-`.github/workflows/ci.yml` runs on pushes and pull requests for `main` and `master`:
+`.github/workflows/verify.yml` runs on pushes and pull requests for `main`:
 
 1. installs Node 22, Python 3.14, npm dependencies, and the locked uv environment;
 1. runs ESLint, TypeScript type checking, Ruff checks, Pyrefly checks, and Python tests;
