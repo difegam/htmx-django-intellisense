@@ -209,11 +209,11 @@ function createGif(name: string): void {
     [
       "-y",
       "-framerate",
-      "1",
+      "5/9",
       "-i",
       path.join(FRAME_DIR, `${name}-%d.png`),
       "-filter_complex",
-      "[0:v]fps=2,scale=1024:-1:flags=lanczos,split[a][b];[a]palettegen[p];[b][p]paletteuse",
+      "[0:v]fps=2,scale=1024:-1:flags=lanczos,tpad=stop_mode=clone:stop_duration=1.0,split[a][b];[a]palettegen[p];[b][p]paletteuse",
       "-loop",
       "0",
       output,
