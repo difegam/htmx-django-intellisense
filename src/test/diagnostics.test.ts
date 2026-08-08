@@ -57,9 +57,17 @@ test("strict values preserve catalog spelling and tolerate missing value lists",
     ],
     patterns: [],
   });
-  const issues = analyzeDocument(`<div hx-swap="innerhtmlx"></div>`, "html", strictValuesCatalog, "compatible");
+  const issues = analyzeDocument(
+    `<div hx-swap="innerhtmlx"></div>`,
+    "html",
+    strictValuesCatalog,
+    "compatible",
+  );
   assert.match(issues[0]?.message ?? "", /Expected innerHTML, outerHTML/);
-  assert.deepEqual(analyzeDocument(`<div hx-test="anything"></div>`, "html", strictValuesCatalog, "compatible"), []);
+  assert.deepEqual(
+    analyzeDocument(`<div hx-test="anything"></div>`, "html", strictValuesCatalog, "compatible"),
+    [],
+  );
 });
 
 test("incomplete attribute prefixes do not warn while typing", () => {
