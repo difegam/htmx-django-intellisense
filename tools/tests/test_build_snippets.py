@@ -10,7 +10,7 @@ import pytest
 
 from htmx_django_intellisense import snippets as _snippets_module
 
-ROOT = Path.cwd()
+ROOT = _snippets_module.ROOT
 EXPECTED_PREFIXES = [
     "htmx-get",
     "htmx-post",
@@ -181,6 +181,32 @@ def test_mutating_forms_require_csrf() -> None:
                 body=[
                     '<form method="post" action="{% url \'safe-view\' %}"',
                     "      hx-post=\"{% url 'safe-view' %}\">",
+                    "{% csrf_token %}",
+                    "</form>",
+                ]
+            )
+        ]
+    )
+
+    with pytest.raises(ValueError, match="all mutating controls must be inside forms"):
+        module.validate_catalog(
+            [
+                _entry(
+                    body=[
+                        '<form method="post" action="/save" hx-post="/save">',
+                        "{% csrf_token %}",
+                        "</form>",
+                        '<button hx-post="/delete">Delete</button>',
+                    ]
+                )
+            ]
+        )
+
+    module.validate_catalog(
+        [
+            _entry(
+                body=[
+                    '<form method="post" action="/save?next=>ok" hx-post="/save?next=>ok">',
                     "{% csrf_token %}",
                     "</form>",
                 ]

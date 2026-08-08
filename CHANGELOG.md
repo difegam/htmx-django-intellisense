@@ -7,8 +7,8 @@ The project follows [Keep a Changelog](https://keepachangelog.com/) conventions 
 
 ### Added
 
-- HTMX pin staleness guard in CI (`scripts/check-htmx-pins.py`) that fails when the pinned upstream tags drift from the latest `bigskysoftware/htmx` git tags.
-- `extensionKind: ["ui"]` so the extension activates on the local UI host under SSH/remote/Dev Containers.
+- HTMX pin staleness guard in CI (`uv run --project tools htmx-tools check-pins`) that fails when the pinned upstream tags drift from the latest `bigskysoftware/htmx` git tags.
+- `extensionKind: ["workspace"]` so the extension can access workspace files under SSH/remote/Dev Containers.
 - `.vscode/launch.json` "Run Extension" config for F5-attach debugging.
 
 ### Changed

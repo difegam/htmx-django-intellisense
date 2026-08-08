@@ -35,8 +35,8 @@ Use `git diff -- htmx.catalog.json` to review the result. The installed extensio
 Install docs dependencies and use a writable cache:
 
 ```bash
-uv sync --group docs
-uv --cache-dir .cache/uv run zensical build --clean --strict
+uv sync --project tools --group docs
+uv --cache-dir .cache/uv run --project tools --group docs zensical build --clean --strict
 ```
 
 For a VSIX that is unexpectedly large, run `npx vsce ls --tree`; source, tests, docs, caches, and Python tooling should be excluded.

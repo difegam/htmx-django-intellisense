@@ -28,7 +28,7 @@ CI also runs `uv run --project tools htmx-tools check-pins` (or `just check-pins
 
 ## CI order (match this locally before pushing)
 
-`npm run lint` → `npm run check-types` → `uv run --project tools ruff check tools` + `uv run --project tools ruff format --check tools` → `uv run --project tools pyrefly check --config tools/pyproject.toml` → `uv run --project tools pytest -c tools/pyproject.toml tools/tests` → `npm run test:unit` → `npm run build-data` (then verify catalog diff is clean) → `npm run build-snippets` (then verify `snippets/django-htmx.json` and `docs/reference/snippets.md` diffs are clean) → `npm run test:extension` → `npm run package` → `npx vsce ls --tree` → `uv build --project tools`.
+`npm run lint` → `npm run check-types` → `uv run --project tools ruff check tools` + `uv run --project tools ruff format --check tools` → `uv run --project tools pyrefly check --config tools/pyproject.toml` → `uv run --project tools pytest -c tools/pyproject.toml tools/tests` → `npm run test:unit` → `npm run build-data` (then verify catalog diff is clean) → `npm run build-snippets` (then verify `snippets/django-htmx.json` and `docs/reference/snippets.md` diffs are clean) → `uv run --project tools htmx-tools check-pins` → `npm run test:extension` → `npm run package` → `npx vsce ls --tree` → `uv build --project tools`.
 
 ## Match CI locally
 

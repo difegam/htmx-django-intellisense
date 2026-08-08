@@ -73,6 +73,8 @@ CLASSIFICATIONS = {
 }
 PREFIX_PATTERN = re.compile(r"^(?:htmx-[a-z0-9]+(?:-[a-z0-9]+)*|partialdef(?:-inline)?|partial)$")
 MUTATING_ATTRIBUTE_PATTERN = re.compile(r"\bhx-(?:post|put|patch|delete)\s*=", re.I)
+FORM_PATTERN = re.compile(r"<form\b(?:[^\"'>]|\"[^\"]*\"|'[^']*')*>.*?</form>", re.I | re.S)
+FORM_OPEN_TAG_PATTERN = re.compile(r"<form\b(?:[^\"'>]|\"[^\"]*\"|'[^']*')*>", re.I | re.S)
 FORBIDDEN_PATTERNS = (
     ("script elements", re.compile(r"<script\b", re.I)),
     ("inline event handlers", re.compile(r"\son[a-z][\w:-]*\s*=", re.I)),
@@ -140,12 +142,20 @@ class SnippetEntry(BaseModel):
 
         markup = "\n".join(self.body)
         if MUTATING_ATTRIBUTE_PATTERN.search(markup):
-            forms = re.findall(r"<form\b[^>]*>.*?</form>", markup, re.I | re.S)
+            forms = FORM_PATTERN.findall(markup)
             mutating_forms = [form for form in forms if MUTATING_ATTRIBUTE_PATTERN.search(form)]
+            mutating_form_attributes = sum(
+                len(MUTATING_ATTRIBUTE_PATTERN.findall(form)) for form in mutating_forms
+            )
+            if mutating_form_attributes != len(MUTATING_ATTRIBUTE_PATTERN.findall(markup)):
+                raise ValueError(f"{label}: all mutating controls must be inside forms")
             if not mutating_forms or any("{% csrf_token %}" not in form for form in mutating_forms):
                 raise ValueError(f"{label}: mutating forms must include {{% csrf_token %}}")
             for form in mutating_forms:
-                tag = form[: form.index(">") + 1]
+                opening_tag = FORM_OPEN_TAG_PATTERN.match(form)
+                if opening_tag is None:
+                    raise ValueError(f"{label}: invalid form markup")
+                tag = opening_tag.group(0)
                 action = re.search(r"\baction\s*=\s*([\"'])(.*?)\1", tag, re.I)
                 hx_post = re.search(r"\bhx-post\s*=\s*([\"'])(.*?)\1", tag, re.I)
                 if re.search(r"\bhx-(?:put|patch|delete)\s*=", tag, re.I):

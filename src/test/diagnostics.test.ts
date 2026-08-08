@@ -20,6 +20,40 @@ test("unknown attributes and closed invalid values warn", () => {
   assert.deepEqual(issues.map((issue) => issue.code), ["unknown-attribute", "invalid-value"]);
 });
 
+test("strict values preserve catalog spelling and tolerate missing value lists", () => {
+  const strictValuesCatalog = new CatalogIndex({
+    schemaVersion: 2,
+    generatedFrom: { htmx2: "test", htmx4: "test" },
+    attributes: [
+      {
+        name: "hx-swap",
+        description: "Test attribute",
+        versions: ["2", "4"],
+        documentation: {},
+        categories: {},
+        values: [
+          { name: "innerHTML", description: "Replace contents" },
+          { name: "outerHTML", description: "Replace element" },
+        ],
+        strictValues: true,
+      },
+      {
+        name: "hx-test",
+        description: "Test attribute",
+        versions: ["2", "4"],
+        documentation: {},
+        categories: {},
+        values: undefined,
+        strictValues: true,
+      },
+    ],
+    patterns: [],
+  });
+  const issues = analyzeDocument(`<div hx-swap="innerhtmlx"></div>`, "html", strictValuesCatalog, "compatible");
+  assert.match(issues[0]?.message ?? "", /Expected innerHTML, outerHTML/);
+  assert.deepEqual(analyzeDocument(`<div hx-test="anything"></div>`, "html", strictValuesCatalog, "compatible"), []);
+});
+
 test("incomplete attribute prefixes do not warn while typing", () => {
   assert.deepEqual(analyzeDocument(`<div hx- data-hx->`, "html", catalog, "compatible"), []);
 });

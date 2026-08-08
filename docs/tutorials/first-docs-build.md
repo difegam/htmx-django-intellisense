@@ -4,13 +4,13 @@ Serve the local Zensical site and validate the same documentation build that Git
 
 ## Prerequisites
 
-- Python 3.12 or later
+- Python 3.14 or later
 - `uv`
 
 ## Install documentation dependencies
 
 ```bash
-uv sync --group docs
+uv sync --project tools --group docs
 ```
 
 ## Serve the site
@@ -30,7 +30,7 @@ just docs-strict
 The command builds to `site/`, which is ignored by the extension package. In restricted environments, use the same command through a workspace-local uv cache:
 
 ```bash
-uv --cache-dir .cache/uv run zensical build --clean --strict
+uv --cache-dir .cache/uv run --project tools --group docs zensical build --clean --strict
 ```
 
 ## Formatting

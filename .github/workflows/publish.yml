@@ -28,7 +28,8 @@ jobs:
           cache-dependency-glob: tools/uv.lock
 
       - name: Set up Python
-        run: uv python install   # honors tools/.python-version (3.14)
+        working-directory: tools
+        run: uv python install
 
       - name: Azure login (Entra workload identity federation)
         uses: azure/login@v2
