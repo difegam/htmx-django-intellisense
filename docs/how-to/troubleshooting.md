@@ -16,7 +16,7 @@ Start the attribute prefix with `data-` or `data-hx`. The default list intention
 
 ## Unexpected diagnostic
 
-Check `htmxTags.version`. `compatible` accepts the HTMX 2/4 union without version hints; `2` and `4` surface other-major syntax as hints. Values containing `{{ ... }}` or `{% ... %}` are not treated as invalid literals.
+Check `htmxDjango.version`. `compatible` accepts the HTMX 2/4 union without version hints; `2` and `4` surface other-major syntax as hints. Values containing `{{ ... }}` or `{% ... %}` are not treated as invalid literals.
 
 ![Diagnostics in VS Code](../assets/images/diagnostics.png)
 

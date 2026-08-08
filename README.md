@@ -106,12 +106,12 @@ The committed catalog covers HTMX `2.0.10` and `4.0.0-beta6`. `compatible` mode 
 
 ## Settings
 
-| Setting                     | Default      | Purpose                                         |
-| --------------------------- | ------------ | ----------------------------------------------- |
-| `htmxTags.enableCompletion` | `true`       | Enable HTMX and Django partial completions.     |
-| `htmxTags.enableHover`      | `true`       | Enable attribute and partial hover information. |
-| `htmxTags.enableValidation` | `true`       | Enable HTMX and same-file partial diagnostics.  |
-| `htmxTags.version`          | `compatible` | Use `compatible`, `2`, or `4`.                  |
+| Setting                       | Default      | Purpose                                         |
+| ----------------------------- | ------------ | ----------------------------------------------- |
+| `htmxDjango.enableCompletion` | `true`       | Enable HTMX and Django partial completions.     |
+| `htmxDjango.enableHover`      | `true`       | Enable attribute and partial hover information. |
+| `htmxDjango.enableValidation` | `true`       | Enable HTMX and same-file partial diagnostics.  |
+| `htmxDjango.version`          | `compatible` | Use `compatible`, `2`, or `4`.                  |
 
 ## Django snippets
 
@@ -124,17 +124,26 @@ The extension packages its generated HTMX catalog and never requests documentati
 
 ## Contributing
 
+Install both toolchains first — the Node extension and the Python catalog/snippet
+generator (`tools/`, managed with `uv`). `npm test` runs Python tests too, so the `uv`
+environment must exist before you run it:
+
 ```bash
 npm install
+uv sync --project tools --frozen --all-groups
+```
+
+Then run the checks and package the extension:
+
+```bash
 npm test
 npm run test:extension
 npm run package
 ```
 
-The catalog and snippet build tooling is Python (`tools/`), managed with `uv`:
+Run the Python generator tests directly with:
 
 ```bash
-uv sync --project tools --frozen --all-groups
 uv run --project tools pytest -c tools/pyproject.toml tools/tests
 ```
 
@@ -153,7 +162,7 @@ npm run build-snippets
 
 ## Documentation
 
-Read the [full documentation](docs/index.md) for setup, HTMX authoring, partials, configuration, packaging, and release guidance.
+Read the [full documentation](https://difegam.github.io/htmx-django-intellisense/) for setup, HTMX authoring, partials, configuration, packaging, and release guidance. The source lives under [`docs/`](docs/index.md).
 
 ## Project history
 

@@ -8,8 +8,8 @@ import {
   type HtmxVersionMode,
 } from "./catalog.js";
 
-export const COPY_EXAMPLE_COMMAND = "htmxTags.copyExample";
-export const OPEN_SETTINGS_COMMAND = "htmxTags.openSettings";
+export const COPY_EXAMPLE_COMMAND = "htmxDjango.copyExample";
+export const OPEN_SETTINGS_COMMAND = "htmxDjango.openSettings";
 
 export interface DocumentationSubject {
   name: string;

@@ -2,12 +2,12 @@
 
 These VS Code settings are contributed by HTMX Django IntelliSense.
 
-| Setting                     | Type                      | Default      | Effect                                                      |
-| --------------------------- | ------------------------- | ------------ | ----------------------------------------------------------- |
-| `htmxTags.enableCompletion` | boolean                   | `true`       | Enables HTMX attribute/value and Django partial completion. |
-| `htmxTags.enableHover`      | boolean                   | `true`       | Enables HTMX and Django partial hover documentation.        |
-| `htmxTags.enableValidation` | boolean                   | `true`       | Enables HTMX and same-file Django partial diagnostics.      |
-| `htmxTags.version`          | `compatible`, `2`, or `4` | `compatible` | Selects the version-aware completion and hint behavior.     |
+| Setting                       | Type                      | Default      | Effect                                                      |
+| ----------------------------- | ------------------------- | ------------ | ----------------------------------------------------------- |
+| `htmxDjango.enableCompletion` | boolean                   | `true`       | Enables HTMX attribute/value and Django partial completion. |
+| `htmxDjango.enableHover`      | boolean                   | `true`       | Enables HTMX and Django partial hover documentation.        |
+| `htmxDjango.enableValidation` | boolean                   | `true`       | Enables HTMX and same-file Django partial diagnostics.      |
+| `htmxDjango.version`          | `compatible`, `2`, or `4` | `compatible` | Selects the version-aware completion and hint behavior.     |
 
 ## Scope
 
@@ -18,9 +18,15 @@ Settings are read through VS Code configuration for the active document, so they
 ```json
 {
   "[django-html]": {
-    "htmxTags.version": "4"
+    "htmxDjango.version": "4"
   }
 }
 ```
 
-Changing an `htmxTags` setting refreshes diagnostics for open supported documents.
+Changing an `htmxDjango` setting refreshes diagnostics for open supported documents.
+
+## Migration from `htmxTags`
+
+The settings namespace was renamed from `htmxTags` to `htmxDjango`. This is a
+breaking change: rename existing `htmxTags.*` entries in user, workspace, folder,
+and language-specific settings to their `htmxDjango.*` equivalents.

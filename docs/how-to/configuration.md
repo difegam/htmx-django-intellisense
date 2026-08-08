@@ -6,10 +6,10 @@ Configure HTMX Django IntelliSense in VS Code settings at the user, workspace, o
 
 ```json
 {
-  "htmxTags.enableCompletion": true,
-  "htmxTags.enableHover": true,
-  "htmxTags.enableValidation": true,
-  "htmxTags.version": "compatible"
+  "htmxDjango.enableCompletion": true,
+  "htmxDjango.enableHover": true,
+  "htmxDjango.enableValidation": true,
+  "htmxDjango.version": "compatible"
 }
 ```
 
@@ -21,7 +21,7 @@ Use this during a stable-HTMX-2 codebase migration:
 
 ```json
 {
-  "htmxTags.version": "2"
+  "htmxDjango.version": "2"
 }
 ```
 
@@ -31,7 +31,7 @@ HTMX 4-only names remain recognizable but appear as hints in diagnostics. Comple
 
 ```json
 {
-  "htmxTags.version": "4"
+  "htmxDjango.version": "4"
 }
 ```
 

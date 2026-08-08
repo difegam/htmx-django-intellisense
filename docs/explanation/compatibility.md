@@ -4,7 +4,7 @@ The extension supports the HTMX 2 and HTMX 4 catalog union while allowing an edi
 
 ## Version modes
 
-| `htmxTags.version`     | Completion     | Validation                    |
+| `htmxDjango.version`   | Completion     | Validation                    |
 | ---------------------- | -------------- | ----------------------------- |
 | `compatible` (default) | HTMX 2/4 union | No version warnings.          |
 | `2`                    | HTMX 2 entries | HTMX 4-only syntax is a hint. |

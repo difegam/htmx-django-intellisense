@@ -56,22 +56,22 @@
     "configuration": {
       "title": "HTMX Django IntelliSense",
       "properties": {
-        "htmxTags.enableCompletion": {
+        "htmxDjango.enableCompletion": {
           "type": "boolean",
           "default": true,
           "description": "Enable HTMX and Django partial completions."
         },
-        "htmxTags.enableHover": {
+        "htmxDjango.enableHover": {
           "type": "boolean",
           "default": true,
           "description": "Enable HTMX and Django partial hover documentation."
         },
-        "htmxTags.enableValidation": {
+        "htmxDjango.enableValidation": {
           "type": "boolean",
           "default": true,
           "description": "Enable HTMX and same-file Django partial diagnostics."
         },
-        "htmxTags.version": {
+        "htmxDjango.version": {
           "type": "string",
           "enum": [
             "compatible",

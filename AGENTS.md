@@ -6,7 +6,7 @@ Two toolchains in one repo: a TypeScript VS Code extension (`src/`) and its runt
 
 Run from repo root. `just` recipes wrap the same commands.
 
-- Install: `npm install` then `uv sync --project tools --frozen --all-groups`.
+- Install: `just init` — runs `npm install`, `uv sync --project tools --frozen --all-groups`, and installs the prek git hooks (`prek install --hook-type pre-commit --hook-type pre-push`). Run this after cloning: a checkout without the hooks installed has **no** local safety net, so lint/type/test regressions only surface in CI. (Manual equivalent: `npm install`, `uv sync --project tools --frozen --all-groups`, then `uv run --project tools prek install --hook-type pre-commit --hook-type pre-push`.)
 - Lint TS: `npm run lint` (eslint) · `npm run check-types` (tsc --noEmit)
 - Format TS/JS/JSON: `npm run format` (prettier --write) · `npm run format:check` (CI gate). Prettier owns formatting; ESLint owns correctness. Markdown is formatted by mdformat and Python by ruff (see `.prettierignore`).
 - Dead code: `npm run knip` (unused files/exports/deps; config in `knip.json`)
@@ -36,13 +36,17 @@ CI also runs `uv run --project tools htmx-tools check-pins` (or `just check-pins
 
 ## Match CI locally
 
-Run the full CI checklist with:
+Before pushing, run the full CI checklist — this is the definition of done, not optional:
 
 ```bash
 just verify
 ```
 
-This assumes dependencies are already installed (`npm install` and `uv sync --project tools --frozen --all-groups`). It runs linting, type-checking, Python checks, all tests, artifact drift checks, extension-host tests, docs build, VSIX packaging, and the Python package build.
+This assumes dependencies are already installed (`just init`). It runs linting, type-checking, Python checks, all tests, artifact drift checks, extension-host tests, docs build, VSIX packaging, and the Python package build.
+
+- **Never rely on TS tests alone.** `npm test` (and `just verify`) also run the Python contract tests in `tools/tests/`, which assert the extension manifest. Skipping them is how manifest/test drift reaches CI.
+- **package.json ↔ tests are coupled.** Any change to `package.json` `contributes` (settings keys, command IDs) must be mirrored in `tools/tests/test_extension_contract.py` and `src/test/suite/index.ts`; run `npm test` after such a change.
+- The prek hooks enforce a subset automatically once installed: pre-commit runs Ruff, mdformat, Prettier, Pyrefly, ESLint, and pytest; pre-push adds `check-types`, `test:unit`, and `knip`. They do **not** replace `just verify` (which also covers extension-host, smoke, docs, and packaging).
 
 ## Layout & boundaries
 

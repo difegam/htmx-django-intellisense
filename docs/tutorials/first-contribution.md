@@ -5,8 +5,21 @@ Make a small extension change and verify both its pure logic and its VS Code int
 ## Set up the workspace
 
 ```bash
+just init
+```
+
+`just init` installs the Node and Python toolchains and the prek git hooks
+(`pre-commit` and `pre-push`). The hooks run Ruff, Prettier, mdformat, Pyrefly, ESLint,
+and the Python tests on commit, and `check-types`, TypeScript unit tests, and `knip` on
+push — so most regressions surface before you open a pull request. Without this step your
+clone has no local safety net.
+
+The manual equivalent, if you are not using `just`:
+
+```bash
 npm install
 uv sync --project tools --frozen --all-groups
+uv run --project tools prek install --hook-type pre-commit --hook-type pre-push
 ```
 
 ## Choose the source of truth

@@ -7,11 +7,18 @@ Test the extension in your local VS Code before opening a pull request or publis
 Run from the repository root:
 
 ```bash
-npm install
-uv sync --project tools --frozen --all-groups
+just init
 ```
 
-This matches the `just init` recipe and installs the Node toolchain, the VS Code extension build tools, and the locked Python generator environment.
+`just init` installs the Node toolchain, the VS Code extension build tools, the locked
+Python generator environment, and the prek git hooks (`pre-commit` and `pre-push`) that run
+lint, type, format, and test checks automatically. The manual equivalent is:
+
+```bash
+npm install
+uv sync --project tools --frozen --all-groups
+uv run --project tools prek install --hook-type pre-commit --hook-type pre-push
+```
 
 ## Run the automated checks
 
