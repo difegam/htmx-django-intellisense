@@ -70,6 +70,11 @@ repos:
 
   - repo: local
     hooks:
+      - id: prettier
+        name: format JS/TS/JSON with Prettier
+        entry: npx --no-install prettier --write --ignore-unknown
+        language: system
+        types_or: [ts, javascript, json]
       - id: pytest
         name: run tests
         entry: uv run --project tools pytest -c tools/pyproject.toml tools/tests

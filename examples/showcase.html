@@ -1,22 +1,20 @@
 {% partialdef result_card inline %}
 <article id="result-{{ result.pk }}" class="result-card">
   <h2>{{ result.title }}</h2>
-  <button hx-get="{% url 'result-detail' result.pk %}"
-          hx-target="closest .result-card"
-          hx-swap="outerHTML">
+  <button hx-get="{% url 'result-detail' result.pk %}" hx-target="closest .result-card" hx-swap="outerHTML">
     Refresh
   </button>
 </article>
 {% endpartialdef %}
 
 <main>
-  <input type="search"
-         name="q"
-         hx-get="{% url 'search' %}"
-         hx-trigger="keyup changed delay:300ms"
-         hx-target="#results">
+  <input
+    type="search"
+    name="q"
+    hx-get="{% url 'search' %}"
+    hx-trigger="keyup changed delay:300ms"
+    hx-target="#results"
+  />
 
-  <section id="results">
-    {% partial result_card %}
-  </section>
+  <section id="results">{% partial result_card %}</section>
 </main>

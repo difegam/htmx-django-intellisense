@@ -1,11 +1,6 @@
 import * as vscode from "vscode";
 
-import {
-  type CatalogAttribute,
-  type CatalogIndex,
-  type HtmxVersionMode,
-  loadCatalog,
-} from "./catalog.js";
+import { type CatalogAttribute, type CatalogIndex, type HtmxVersionMode, loadCatalog } from "./catalog.js";
 import { analyzeDocument } from "./diagnostics.js";
 import { computeQuickFixes } from "./quickfixes.js";
 import { evictScan, getScan } from "./scanCache.js";
@@ -74,7 +69,7 @@ function completionRange(
   }
   const text = document.getText();
   let start = offset;
-  while (start > 0 && !/[\s<>=/"']/.test(text[start - 1])) {
+  while (start > 0 && !/[\s<>=/"']/.test(text.charAt(start - 1))) {
     start--;
   }
   return new vscode.Range(document.positionAt(start), document.positionAt(offset));
@@ -180,7 +175,7 @@ function partialCompletionItems(
   if (match === null) {
     return undefined;
   }
-  const prefix = match[1];
+  const prefix = match[1] ?? "";
   const start = offset - prefix.length;
   const range = new vscode.Range(document.positionAt(start), document.positionAt(offset));
   const unique = new Map(scan.partialDefinitions.map((definition) => [definition.name, definition]));
@@ -206,7 +201,7 @@ function partialTagCompletionItems(
   if (match === null) {
     return undefined;
   }
-  const prefix = match[1];
+  const prefix = match[1] ?? "";
   const range = new vscode.Range(document.positionAt(offset - prefix.length), document.positionAt(offset));
   const leadingSpace = active === "{%" ? " " : "";
   const completions = [
@@ -355,7 +350,10 @@ async function provideDefinitions(
           (definition) =>
             new vscode.Location(
               document.uri,
-              new vscode.Range(document.positionAt(definition.nameStart), document.positionAt(definition.nameEnd)),
+              new vscode.Range(
+                document.positionAt(definition.nameStart),
+                document.positionAt(definition.nameEnd),
+              ),
             ),
         );
     }
@@ -405,12 +403,12 @@ function valueCompletionItems(
 
   if (resolved.canonicalName === "hx-swap") {
     const tokens = beforeCursor.trim().split(/\s+/).filter(Boolean);
-    const strategyChosen = values.some(
-      (value) => value.kind === "strategy" && value.name === tokens[0],
-    );
+    const strategyChosen = values.some((value) => value.kind === "strategy" && value.name === tokens[0]);
     if (strategyChosen && (/\s$/.test(beforeCursor) || tokens.length > 1)) {
       values = values.filter((value) => value.kind === "modifier");
-      start = attribute.valueStart + (beforeCursor.search(/\S+$/) < 0 ? beforeCursor.length : beforeCursor.search(/\S+$/));
+      start =
+        attribute.valueStart +
+        (beforeCursor.search(/\S+$/) < 0 ? beforeCursor.length : beforeCursor.search(/\S+$/));
       used = tokens.slice(1);
     } else {
       values = values.filter((value) => value.kind === "strategy");
@@ -422,7 +420,10 @@ function valueCompletionItems(
     const tokens = clause.trim().split(/\s+/).filter(Boolean);
     if (tokens.length > 0 && (/\s$/.test(clause) || tokens.length > 1)) {
       values = values.filter((value) => value.kind === "modifier");
-      start = attribute.valueStart + clauseStart + (clause.search(/\S+$/) < 0 ? clause.length : clause.search(/\S+$/));
+      start =
+        attribute.valueStart +
+        clauseStart +
+        (clause.search(/\S+$/) < 0 ? clause.length : clause.search(/\S+$/));
       used = tokens.slice(1);
     } else {
       values = values.filter((value) => value.kind === "event");
@@ -442,7 +443,10 @@ function valueCompletionItems(
     const segment = beforeCursor.split(/[\s,]/).at(-1) ?? "";
     start = offset - segment.length;
     used = beforeCursor.split(/[\s,]/).filter(Boolean);
-  } else if (!entry.strictValues && !["hx-target", "hx-sync", "hx-params", "hx-swap-oob"].includes(resolved.canonicalName)) {
+  } else if (
+    !entry.strictValues &&
+    !["hx-target", "hx-sync", "hx-params", "hx-swap-oob"].includes(resolved.canonicalName)
+  ) {
     const segment = beforeCursor.split(/[\s,]/).at(-1) ?? "";
     start = offset - segment.length;
   }
@@ -538,65 +542,65 @@ async function provideCompletions(
   const pattern = (name: string) => catalog.data.patterns.find((entry) => entry.name === name);
   const hxOn = pattern("hx-on:<event>");
   if (hxOn !== undefined) {
-  items.push(
-    dynamicCompletion(
-      `${alias}hx-on:<event>`,
-      `${alias}hx-on:\${1:event}=\"$0\"`,
-      "Handle a DOM event inline",
-      range,
+    items.push(
+      dynamicCompletion(
+        `${alias}hx-on:<event>`,
+        `${alias}hx-on:\${1:event}=\"$0\"`,
+        "Handle a DOM event inline",
+        range,
         mode,
         hxOn.versions,
         hxOn.documentation,
         hxOn.examples,
         hxOn.categories,
       ),
-    dynamicCompletion(
-      `${alias}hx-on::<event>`,
-      `${alias}hx-on::\${1:before-request}=\"$0\"`,
-      "Handle an HTMX event inline",
-      range,
+      dynamicCompletion(
+        `${alias}hx-on::<event>`,
+        `${alias}hx-on::\${1:before-request}=\"$0\"`,
+        "Handle an HTMX event inline",
+        range,
         mode,
         hxOn.versions,
         hxOn.documentation,
         hxOn.examples,
         hxOn.categories,
       ),
-  );
+    );
   }
   if (mode !== "4") {
     const responseTargets = pattern("hx-target-<status>");
     if (responseTargets !== undefined) {
-    items.push(
-      dynamicCompletion(
-        `${alias}hx-target-<status>`,
-        `${alias}hx-target-\${1:4*}=\"\${2:#errors}\"`,
-        "Response Targets extension",
-        range,
+      items.push(
+        dynamicCompletion(
+          `${alias}hx-target-<status>`,
+          `${alias}hx-target-\${1:4*}=\"\${2:#errors}\"`,
+          "Response Targets extension",
+          range,
           mode,
           responseTargets.versions,
           responseTargets.documentation,
           responseTargets.examples,
           responseTargets.categories,
-      ),
-    );
+        ),
+      );
     }
   }
   if (mode !== "2") {
     const status = pattern("hx-status:<status>");
     if (status !== undefined) {
-    items.push(
-      dynamicCompletion(
-        `${alias}hx-status:<status>`,
-        `${alias}hx-status:\${1:422}=\"\${2:target:#errors}\"`,
-        "HTMX 4 status-specific response handling",
-        range,
+      items.push(
+        dynamicCompletion(
+          `${alias}hx-status:<status>`,
+          `${alias}hx-status:\${1:422}=\"\${2:target:#errors}\"`,
+          "HTMX 4 status-specific response handling",
+          range,
           mode,
           status.versions,
           status.documentation,
           status.examples,
           status.categories,
-      ),
-    );
+        ),
+      );
     }
   }
 
@@ -662,7 +666,10 @@ function provideHover(
   return undefined;
 }
 
-function partialNameRange(document: vscode.TextDocument, position: vscode.Position): vscode.Range | undefined {
+function partialNameRange(
+  document: vscode.TextDocument,
+  position: vscode.Position,
+): vscode.Range | undefined {
   if (document.languageId !== "django-html") {
     return undefined;
   }
@@ -691,7 +698,11 @@ function provideReferences(
     (span) => context.includeDeclaration || span.kind !== "definition",
   );
   return spans.map(
-    (span) => new vscode.Location(document.uri, new vscode.Range(document.positionAt(span.start), document.positionAt(span.end))),
+    (span) =>
+      new vscode.Location(
+        document.uri,
+        new vscode.Range(document.positionAt(span.start), document.positionAt(span.end)),
+      ),
   );
 }
 
@@ -752,7 +763,7 @@ function provideCodeActions(
       );
     }
     action.edit = edit;
-    action.diagnostics = [relevant[fix.diagnosticIndex]];
+    action.diagnostics = [relevant[fix.diagnosticIndex]!];
     if (fix.isPreferred === true) {
       action.isPreferred = true;
     }
@@ -779,7 +790,11 @@ export function activate(context: vscode.ExtensionContext): void {
   partialWatcher.onDidDelete(clearTemplatePartialCache);
 
   const updateDiagnostics = (document: vscode.TextDocument): void => {
-    if (!DOCUMENT_SELECTOR.some((selector) => typeof selector !== "string" && selector.language === document.languageId)) {
+    if (
+      !DOCUMENT_SELECTOR.some(
+        (selector) => typeof selector !== "string" && selector.language === document.languageId,
+      )
+    ) {
       return;
     }
     if (!configuration(document).get("enableValidation", true)) {
@@ -793,16 +808,15 @@ export function activate(context: vscode.ExtensionContext): void {
       versionMode(document),
       getScan(document),
     ).map((issue) => {
-        const diagnostic = new vscode.Diagnostic(
-          new vscode.Range(document.positionAt(issue.start), document.positionAt(issue.end)),
-          issue.message,
-          issue.severity === "warning" ? vscode.DiagnosticSeverity.Warning : vscode.DiagnosticSeverity.Hint,
-        );
-        diagnostic.source = DIAGNOSTIC_SOURCE;
-        diagnostic.code = issue.code;
-        return diagnostic;
-      },
-    );
+      const diagnostic = new vscode.Diagnostic(
+        new vscode.Range(document.positionAt(issue.start), document.positionAt(issue.end)),
+        issue.message,
+        issue.severity === "warning" ? vscode.DiagnosticSeverity.Warning : vscode.DiagnosticSeverity.Hint,
+      );
+      diagnostic.source = DIAGNOSTIC_SOURCE;
+      diagnostic.code = issue.code;
+      return diagnostic;
+    });
     diagnostics.set(document.uri, entries);
   };
 
@@ -842,7 +856,8 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.languages.registerCompletionItemProvider(
       DOCUMENT_SELECTOR,
       {
-        provideCompletionItems: (document, position, token) => provideCompletions(catalog, document, position, token),
+        provideCompletionItems: (document, position, token) =>
+          provideCompletions(catalog, document, position, token),
         resolveCompletionItem: (item) => {
           item.documentation = COMPLETION_DOCUMENTATION.get(item)?.();
           return item;
@@ -850,7 +865,7 @@ export function activate(context: vscode.ExtensionContext): void {
       },
       "-",
       ":",
-      "\"",
+      '"',
       "'",
       "%",
       " ",
@@ -900,7 +915,10 @@ export function activate(context: vscode.ExtensionContext): void {
     ),
     vscode.commands.registerCommand(COPY_EXAMPLE_COMMAND, copyExample),
     vscode.commands.registerCommand(OPEN_SETTINGS_COMMAND, () =>
-      vscode.commands.executeCommand("workbench.action.openSettings", "@ext:difegam.htmx-django-intellisense"),
+      vscode.commands.executeCommand(
+        "workbench.action.openSettings",
+        "@ext:difegam.htmx-django-intellisense",
+      ),
     ),
     vscode.workspace.onDidOpenTextDocument(updateDiagnostics),
     vscode.workspace.onDidChangeTextDocument((event) => scheduleDiagnostics(event.document)),

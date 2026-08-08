@@ -1,0 +1,25 @@
+version: 2
+updates:
+  # npm dependencies for the VS Code extension
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    groups:
+      dev-dependencies:
+        dependency-type: development
+    open-pull-requests-limit: 5
+
+  # Python tooling under tools/ (uv-managed, uv.lock as the lockfile)
+  - package-ecosystem: uv
+    directory: "/tools"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  # GitHub Actions used across workflows
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5

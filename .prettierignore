@@ -1,0 +1,25 @@
+# Build output and caches
+out/
+dist/
+.vscode-test/
+.cache/
+node_modules/
+
+# Generated data — owned by the Python tools/, not hand-edited
+htmx.catalog.json
+snippets/django-htmx.json
+
+# Rendered docs site
+site/
+
+# Lockfiles
+package-lock.json
+tools/uv.lock
+
+# Markdown is formatted by mdformat; Python by ruff (see .pre-commit-config.yaml)
+**/*.md
+**/*.py
+
+# Binary/media
+images/
+*.vsix

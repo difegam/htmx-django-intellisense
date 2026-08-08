@@ -190,7 +190,10 @@ async function captureStates(): Promise<void> {
         }
       } else {
         writeFileSync(path.join(ROOT, "images", `${state}.png`), frame);
-        copyFileSync(path.join(ROOT, "images", `${state}.png`), path.join(ROOT, "docs/assets/images", `${state}.png`));
+        copyFileSync(
+          path.join(ROOT, "images", `${state}.png`),
+          path.join(ROOT, "docs/assets/images", `${state}.png`),
+        );
       }
       writeFileSync(`${STATE_FILE}.${state}.ack`, "captured");
     }
@@ -217,17 +220,11 @@ function createGif(name: string): void {
     ],
     { stdio: "ignore" },
   );
-  const result = ffmpeg.status === 0 ? ffmpeg : createGifWithImageIo(
-    output,
-    name,
-  );
+  const result = ffmpeg.status === 0 ? ffmpeg : createGifWithImageIo(output, name);
   if (result.status !== 0) {
     throw new Error("ffmpeg or macOS ImageIO is required to generate Marketplace demo GIFs");
   }
-  copyFileSync(
-    output,
-    path.join(ROOT, "docs/assets/images", `${name}.gif`),
-  );
+  copyFileSync(output, path.join(ROOT, "docs/assets/images", `${name}.gif`));
 }
 
 function createGifWithImageIo(output: string, name: string): ReturnType<typeof spawnSync> {
@@ -257,10 +254,7 @@ function createGifWithImageIo(output: string, name: string): ReturnType<typeof s
   }
   return spawnSync(
     GIF_ENCODER,
-    [
-      output,
-      ...DEMOS[name].map((_state, index) => path.join(FRAME_DIR, `${name}-${index + 1}.png`)),
-    ],
+    [output, ...(DEMOS[name] ?? []).map((_state, index) => path.join(FRAME_DIR, `${name}-${index + 1}.png`))],
     { stdio: "inherit" },
   );
 }
@@ -274,6 +268,9 @@ async function main(): Promise<void> {
   }
   const vscodeExecutablePath = await downloadAndUnzipVSCode("1.90.2");
   const [cliPath, ...cliArgs] = resolveCliArgsFromVSCodeExecutablePath(vscodeExecutablePath);
+  if (cliPath === undefined) {
+    throw new Error("Unable to resolve the VS Code CLI path from the screenshot runtime");
+  }
   const install = spawnSync(
     cliPath,
     [...cliArgs, "--install-extension", "batisteo.vscode-django", "--force"],

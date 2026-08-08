@@ -35,17 +35,17 @@ test("unknown attribute typo offers the nearest attribute", () => {
   const preferred = fixes.find((fix) => fix.isPreferred);
   assert.ok(preferred, "expected a preferred fix");
   assert.equal(preferred.title, "Replace with 'hx-method'");
-  assert.deepEqual(preferred.edits[0].newText, "hx-method");
+  assert.deepEqual(preferred.edits[0]!.newText, "hx-method");
 });
 
 test("data-hx alias typo keeps the data- prefix", () => {
   const fixes = fixesFor(`<form data-hx-methd="post"></form>`, "html");
-  assert.ok(fixes.some((fix) => fix.edits[0].newText === "data-hx-method"));
+  assert.ok(fixes.some((fix) => fix.edits[0]!.newText === "data-hx-method"));
 });
 
 test("invalid strict value offers the allowed values", () => {
   const fixes = fixesFor(`<form hx-method="trace"></form>`, "html");
-  const targets = fixes.map((fix) => fix.edits[0].newText);
+  const targets = fixes.map((fix) => fix.edits[0]!.newText);
   assert.ok(targets.includes("get"));
   assert.ok(targets.includes("post"));
 });
@@ -55,15 +55,18 @@ test("deprecated attribute offers its documented successor", () => {
   const preferred = fixes.find((fix) => fix.isPreferred);
   assert.ok(preferred, "expected a preferred fix");
   assert.equal(preferred.title, "Replace with 'hx-vals'");
-  assert.equal(preferred.edits[0].newText, "hx-vals");
+  assert.equal(preferred.edits[0]!.newText, "hx-vals");
 });
 
 test("unknown Django partial offers a rename and a definition stub", () => {
   const text = `{% partialdef card %}{% endpartialdef %}{% partial car %}`;
   const fixes = fixesFor(text, "django-html");
-  assert.ok(fixes.some((fix) => fix.edits[0].newText === "card"), "expected nearest-name rename");
+  assert.ok(
+    fixes.some((fix) => fix.edits[0]!.newText === "card"),
+    "expected nearest-name rename",
+  );
   const create = fixes.find((fix) => fix.title.startsWith("Create "));
   assert.ok(create, "expected a create-partialdef fix");
-  assert.equal(create.edits[0].start, text.length);
-  assert.match(create.edits[0].newText, /\{% partialdef car %\}/);
+  assert.equal(create.edits[0]!.start, text.length);
+  assert.match(create.edits[0]!.newText, /\{% partialdef car %\}/);
 });

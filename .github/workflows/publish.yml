@@ -6,7 +6,7 @@ on:
 
 permissions:
   contents: read
-  id-token: write   # required for Entra workload identity federation
+  id-token: write # required for Entra workload identity federation
 
 jobs:
   publish:

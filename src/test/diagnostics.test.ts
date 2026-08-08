@@ -16,8 +16,16 @@ test("compatible mode accepts issue regressions and unrelated attributes", () =>
 });
 
 test("unknown attributes and closed invalid values warn", () => {
-  const issues = analyzeDocument(`<form hx-methd="post" hx-method="trace"></form>`, "html", catalog, "compatible");
-  assert.deepEqual(issues.map((issue) => issue.code), ["unknown-attribute", "invalid-value"]);
+  const issues = analyzeDocument(
+    `<form hx-methd="post" hx-method="trace"></form>`,
+    "html",
+    catalog,
+    "compatible",
+  );
+  assert.deepEqual(
+    issues.map((issue) => issue.code),
+    ["unknown-attribute", "invalid-value"],
+  );
 });
 
 test("strict values preserve catalog spelling and tolerate missing value lists", () => {
@@ -49,9 +57,17 @@ test("strict values preserve catalog spelling and tolerate missing value lists",
     ],
     patterns: [],
   });
-  const issues = analyzeDocument(`<div hx-swap="innerhtmlx"></div>`, "html", strictValuesCatalog, "compatible");
+  const issues = analyzeDocument(
+    `<div hx-swap="innerhtmlx"></div>`,
+    "html",
+    strictValuesCatalog,
+    "compatible",
+  );
   assert.match(issues[0]?.message ?? "", /Expected innerHTML, outerHTML/);
-  assert.deepEqual(analyzeDocument(`<div hx-test="anything"></div>`, "html", strictValuesCatalog, "compatible"), []);
+  assert.deepEqual(
+    analyzeDocument(`<div hx-test="anything"></div>`, "html", strictValuesCatalog, "compatible"),
+    [],
+  );
 });
 
 test("incomplete attribute prefixes do not warn while typing", () => {
@@ -83,5 +99,8 @@ test("Django partial duplicates and unknown references warn", () => {
     catalog,
     "compatible",
   );
-  assert.deepEqual(issues.map((issue) => issue.code), ["duplicate-partial", "unknown-partial"]);
+  assert.deepEqual(
+    issues.map((issue) => issue.code),
+    ["duplicate-partial", "unknown-partial"],
+  );
 });

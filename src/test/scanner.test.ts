@@ -10,7 +10,9 @@ import {
 } from "../scanner.js";
 
 test("scanner reads multiline HTMX attributes and Django expressions", () => {
-  const scan = scanDocument(`<button\n  hx-get="{% url 'items' %}"\n  data-hx-target='#results'\n  hx-on::after-request="done()">Go</button>`);
+  const scan = scanDocument(
+    `<button\n  hx-get="{% url 'items' %}"\n  data-hx-target='#results'\n  hx-on::after-request="done()">Go</button>`,
+  );
   assert.deepEqual(
     scan.attributes.map((attribute) => [attribute.name, attribute.value]),
     [
@@ -28,7 +30,10 @@ test("scanner ignores comments, scripts, styles, and verbatim blocks", () => {
 <style>.x[data-value="hx-style"] { color: red; }</style>
 {% verbatim %}<div hx-verbatim="x">{% endverbatim %}
 <div hx-get="/ok"></div>`);
-  assert.deepEqual(scan.attributes.map((attribute) => attribute.name), ["hx-get"]);
+  assert.deepEqual(
+    scan.attributes.map((attribute) => attribute.name),
+    ["hx-get"],
+  );
 });
 
 test("scanner handles incomplete quoted values without leaving the tag", () => {
@@ -50,10 +55,14 @@ test("scanner finds same-file Django partial definitions and references", () => 
 {% partialdef card inline %}<article></article>{% endpartialdef %}
 {% partial card %}
 {% comment %}{% partial hidden %}{% endcomment %}`);
-  assert.deepEqual(scan.partialDefinitions.map(({ name, inline }) => ({ name, inline })), [
-    { name: "card", inline: true },
-  ]);
-  assert.deepEqual(scan.partialReferences.map(({ name }) => name), ["card"]);
+  assert.deepEqual(
+    scan.partialDefinitions.map(({ name, inline }) => ({ name, inline })),
+    [{ name: "card", inline: true }],
+  );
+  assert.deepEqual(
+    scan.partialReferences.map(({ name }) => name),
+    ["card"],
+  );
 });
 
 test("scanner ignores partial-looking text inside script and style blocks", () => {
@@ -62,8 +71,14 @@ test("scanner ignores partial-looking text inside script and style blocks", () =
 <script>const t = "{% partial missing %}";</script>
 <style>/* {% partial hidden %} */</style>
 {% partial card %}`);
-  assert.deepEqual(scan.partialDefinitions.map(({ name }) => name), ["card"]);
-  assert.deepEqual(scan.partialReferences.map(({ name }) => name), ["card"]);
+  assert.deepEqual(
+    scan.partialDefinitions.map(({ name }) => name),
+    ["card"],
+  );
+  assert.deepEqual(
+    scan.partialReferences.map(({ name }) => name),
+    ["card"],
+  );
 });
 
 test("partialSpansByName collects the definition and every same-name reference", () => {
@@ -86,7 +101,10 @@ test("scanner finds static Django include partial references", () => {
     references.map(({ templateName, name }) => ({ templateName, name })),
     [{ templateName: "cards/item.html", name: "result-card" }],
   );
-  assert.equal(templatePartialReferenceAtOffset(text, "django-html", references[0].nameStart)?.name, "result-card");
+  assert.equal(
+    templatePartialReferenceAtOffset(text, "django-html", references[0]!.nameStart)?.name,
+    "result-card",
+  );
 });
 
 test("scanner finds template partials in supported Python call arguments", () => {

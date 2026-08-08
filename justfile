@@ -40,17 +40,20 @@ check-pins:
 [group("ci")]
 verify:
     npm run lint
+    npm run format:check
     npm run check-types
+    npm run knip
     uv run --project tools ruff check tools
     uv run --project tools ruff format --check tools
     uv run --project tools pyrefly check --config tools/pyproject.toml
     uv run --project tools pytest -c tools/pyproject.toml tools/tests
-    npm run test:unit
+    npm run test:coverage
     npm run build-data
     npm run build-snippets
     git diff --exit-code -- htmx.catalog.json snippets/django-htmx.json docs/reference/snippets.md
     uv run --project tools htmx-tools check-pins
     npm run test:extension
+    npm run test:smoke
     uv run --project tools --group docs zensical build --clean --strict
     npm run package
     npx vsce ls --tree

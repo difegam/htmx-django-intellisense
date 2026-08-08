@@ -310,11 +310,7 @@
     "category": "Server responses",
     "classification": "common",
     "description": "Update a second region from a Django HTMX response",
-    "body": [
-      "<section id=\"${1:summary}\" hx-swap-oob=\"true\">",
-      "  ${2:Updated summary}",
-      "</section>"
-    ],
+    "body": ["<section id=\"${1:summary}\" hx-swap-oob=\"true\">", "  ${2:Updated summary}", "</section>"],
     "usage": "Return this fragment alongside the primary response; HTMX replaces the existing element with the matching id."
   },
   {
@@ -336,11 +332,7 @@
     "category": "Django partials",
     "classification": "django-6",
     "description": "Define a Django 6 template partial",
-    "body": [
-      "{% partialdef ${1:partial_name} %}",
-      "  $0",
-      "{% endpartialdef %}"
-    ],
+    "body": ["{% partialdef ${1:partial_name} %}", "  $0", "{% endpartialdef %}"],
     "usage": "Django 6 registers the named block as a reusable partial in the current template."
   },
   {
@@ -349,11 +341,7 @@
     "category": "Django partials",
     "classification": "django-6",
     "description": "Define and render an inline Django 6 template partial",
-    "body": [
-      "{% partialdef ${1:partial_name} inline %}",
-      "  $0",
-      "{% endpartialdef %}"
-    ],
+    "body": ["{% partialdef ${1:partial_name} inline %}", "  $0", "{% endpartialdef %}"],
     "usage": "Django 6 registers and renders the named partial at its definition site."
   },
   {
@@ -362,9 +350,7 @@
     "category": "Django partials",
     "classification": "django-6",
     "description": "Render a same-file Django 6 template partial",
-    "body": [
-      "{% partial ${1:partial_name} %}"
-    ],
+    "body": ["{% partial ${1:partial_name} %}"],
     "usage": "The referenced partial must be defined in the same template or resolved through Django's supported partial syntax."
   }
 ]

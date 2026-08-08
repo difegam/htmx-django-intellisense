@@ -10,7 +10,7 @@ export interface AttributeToken {
   value?: string;
   valueStart?: number;
   valueEnd?: number;
-  quote?: "\"" | "'";
+  quote?: '"' | "'";
   valueClosed?: boolean;
 }
 
@@ -144,8 +144,8 @@ function parseTag(text: string, start: number): HtmlTag | undefined {
       while (/\s/.test(text[cursor] ?? "")) {
         cursor++;
       }
-      const quote: "\"" | "'" | undefined =
-        text[cursor] === "\"" || text[cursor] === "'" ? (text[cursor] as "\"" | "'") : undefined;
+      const quote: '"' | "'" | undefined =
+        text[cursor] === '"' || text[cursor] === "'" ? (text[cursor] as '"' | "'") : undefined;
       if (quote !== undefined) {
         attribute.quote = quote;
         cursor++;
@@ -206,7 +206,7 @@ function maskIgnoredDjangoRegions(text: string): string {
       const rawText = RAW_TEXT_OPEN.exec(text);
       if (rawText !== null) {
         const contentStart = cursor + rawText[0].length;
-        const closing = rawText[1].toLowerCase() === "script" ? SCRIPT_CLOSE : STYLE_CLOSE;
+        const closing = rawText[1]?.toLowerCase() === "script" ? SCRIPT_CLOSE : STYLE_CLOSE;
         closing.lastIndex = contentStart;
         const match = closing.exec(text);
         const end = match === null ? text.length : match.index + match[0].length;
@@ -242,9 +242,13 @@ function scanPartials(text: string): Pick<ScanResult, "partialDefinitions" | "pa
   for (const match of visible.matchAll(pattern)) {
     const full = match[0];
     const command = match[1];
-    const args = match[2].trim().split(/\s+/).filter(Boolean);
+    const rawArgs = match[2];
+    if (command === undefined || rawArgs === undefined || match.index === undefined) {
+      continue;
+    }
+    const args = rawArgs.trim().split(/\s+/).filter(Boolean);
     const name = args[0];
-    if (name === undefined || match.index === undefined) {
+    if (name === undefined) {
       continue;
     }
     const relativeNameStart = full.indexOf(name, full.indexOf(command) + command.length);
@@ -270,17 +274,25 @@ function scanDjangoTemplatePartials(text: string): TemplatePartialReference[] {
   const references: TemplatePartialReference[] = [];
   const pattern = /\{%\s*include\s+(["'])([^\r\n"'#]+)#([^\s\r\n"'#%}]*)\1(?=[\s%])/g;
   for (const match of visible.matchAll(pattern)) {
-    if (match.index === undefined) {
+    const quote = match[1];
+    const templateName = match[2];
+    const name = match[3];
+    if (
+      match.index === undefined ||
+      quote === undefined ||
+      templateName === undefined ||
+      name === undefined
+    ) {
       continue;
     }
-    const quoteStart = match.index + match[0].indexOf(match[1]);
+    const quoteStart = match.index + match[0].indexOf(quote);
     const templateNameStart = quoteStart + 1;
-    const nameStart = templateNameStart + match[2].length + 1;
+    const nameStart = templateNameStart + templateName.length + 1;
     references.push({
-      templateName: match[2],
-      name: match[3],
+      templateName,
+      name,
       nameStart,
-      nameEnd: nameStart + match[3].length,
+      nameEnd: nameStart + name.length,
     });
   }
   return references;
@@ -318,14 +330,14 @@ function pythonTokens(text: string): PythonToken[] {
         cursor++;
       }
       prefix = text.slice(tokenStart, cursor);
-      if (text[cursor] !== "\"" && text[cursor] !== "'") {
+      if (text[cursor] !== '"' && text[cursor] !== "'") {
         tokens.push({ type: "identifier", value: prefix, start: tokenStart });
         continue;
       }
     }
 
-    if (text[cursor] === "\"" || text[cursor] === "'") {
-      const quote = text[cursor];
+    const quote = text[cursor];
+    if (quote === '"' || quote === "'") {
       const quoteLength = text.startsWith(quote.repeat(3), cursor) ? 3 : 1;
       const contentStart = cursor + quoteLength;
       cursor = contentStart;
@@ -362,7 +374,7 @@ function pythonTokens(text: string): PythonToken[] {
       continue;
     }
 
-    tokens.push({ type: "punctuation", value: text[cursor], start: cursor });
+    tokens.push({ type: "punctuation", value: text.charAt(cursor), start: cursor });
     cursor++;
   }
   return tokens;
@@ -385,7 +397,12 @@ const PYTHON_TEMPLATE_ARGUMENTS: Readonly<Record<string, { position: number; key
 };
 
 function templateReferenceFromString(token: PythonToken): TemplatePartialReference | undefined {
-  if (token.type !== "string" || token.closed !== true || token.staticString !== true || token.contentStart === undefined) {
+  if (
+    token.type !== "string" ||
+    token.closed !== true ||
+    token.staticString !== true ||
+    token.contentStart === undefined
+  ) {
     return undefined;
   }
   const hash = token.value.indexOf("#");
@@ -412,6 +429,9 @@ function scanPythonTemplatePartials(text: string): TemplatePartialReference[] {
 
   for (let index = 0; index < tokens.length; index++) {
     const token = tokens[index];
+    if (token === undefined) {
+      continue;
+    }
     const top = stack.at(-1);
     if (token.type === "identifier" && top?.delimiter === "(") {
       top.possibleKeyword = token.value;
@@ -452,7 +472,7 @@ function scanPythonTemplatePartials(text: string): TemplatePartialReference[] {
     }
     let callIndex = -1;
     for (let stackIndex = stack.length - 1; stackIndex >= 0; stackIndex--) {
-      const name = stack[stackIndex].name;
+      const name = stack[stackIndex]?.name;
       if (name !== undefined && name in PYTHON_TEMPLATE_ARGUMENTS) {
         callIndex = stackIndex;
         break;
@@ -462,8 +482,14 @@ function scanPythonTemplatePartials(text: string): TemplatePartialReference[] {
       continue;
     }
     const call = stack[callIndex];
-    const expected = PYTHON_TEMPLATE_ARGUMENTS[call.name!];
-    if (call.argument !== expected.position && call.keyword !== expected.keyword) {
+    if (call?.name === undefined) {
+      continue;
+    }
+    const expected = PYTHON_TEMPLATE_ARGUMENTS[call.name];
+    if (
+      expected === undefined ||
+      (call.argument !== expected.position && call.keyword !== expected.keyword)
+    ) {
       continue;
     }
     if (stack.slice(callIndex + 1).some((frame) => frame.name !== undefined || frame.delimiter === "{")) {
@@ -593,6 +619,7 @@ export function partialSpansByName(scan: ScanResult, name: string): PartialNameS
 
 export function tagAtOffset(scan: ScanResult, offset: number): HtmlTag | undefined {
   return scan.tags.find(
-    (tag) => !tag.closing && offset > tag.start && (offset < tag.end || (!tag.terminated && offset === tag.end)),
+    (tag) =>
+      !tag.closing && offset > tag.start && (offset < tag.end || (!tag.terminated && offset === tag.end)),
   );
 }
