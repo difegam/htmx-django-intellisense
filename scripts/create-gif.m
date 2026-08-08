@@ -31,7 +31,7 @@ int main(int argc, const char *argv[]) {
     }
     NSDictionary *frameProperties = @{
         (__bridge NSString *)kCGImagePropertyGIFDictionary: @{
-        (__bridge NSString *)kCGImagePropertyGIFDelayTime: @(index == argc - 1 ? 1.8 : 0.65),
+        (__bridge NSString *)kCGImagePropertyGIFDelayTime: @(index == argc - 1 ? 2.8 : 1.8),
       },
     };
     CGImageDestinationAddImage(destination, frame, (__bridge CFDictionaryRef)frameProperties);
