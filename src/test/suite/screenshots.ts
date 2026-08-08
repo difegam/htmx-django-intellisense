@@ -36,16 +36,12 @@ export async function run(): Promise<void> {
   const extension = vscode.extensions.getExtension("difegam.htmx-django-intellisense");
   assert.ok(extension, "extension is discoverable");
   await extension.activate();
-  await vscode.workspace.getConfiguration("git").update(
-    "openRepositoryInParentFolders",
-    "never",
-    vscode.ConfigurationTarget.Global,
-  );
-  await vscode.workspace.getConfiguration("editor").update(
-    "minimap.enabled",
-    false,
-    vscode.ConfigurationTarget.Global,
-  );
+  await vscode.workspace
+    .getConfiguration("git")
+    .update("openRepositoryInParentFolders", "never", vscode.ConfigurationTarget.Global);
+  await vscode.workspace
+    .getConfiguration("editor")
+    .update("minimap.enabled", false, vscode.ConfigurationTarget.Global);
   await vscode.commands.executeCommand("workbench.action.closeSidebar");
   await vscode.commands.executeCommand("workbench.action.closePanel");
   await vscode.commands.executeCommand("notifications.clearAll");

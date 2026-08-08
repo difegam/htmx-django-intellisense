@@ -26,7 +26,7 @@ jobs:
           cache-dependency-glob: tools/uv.lock
 
       - name: Set up Python
-        run: uv python install   # honors tools/.python-version (3.14)
+        run: uv python install # honors tools/.python-version (3.14)
 
       - name: Install Node dependencies
         run: npm ci
@@ -37,8 +37,14 @@ jobs:
       - name: Lint TypeScript
         run: npm run lint
 
+      - name: Check formatting
+        run: npm run format:check
+
       - name: Type-check TypeScript
         run: npm run check-types
+
+      - name: Dead-code check
+        run: npm run knip
 
       - name: Lint Python
         run: |
@@ -51,8 +57,8 @@ jobs:
       - name: Validate extension data
         run: uv run --project tools pytest -c tools/pyproject.toml tools/tests
 
-      - name: Run TypeScript unit tests
-        run: npm run test:unit
+      - name: Run TypeScript unit tests with coverage
+        run: npm run test:coverage
 
       - name: Verify generated artifacts are current
         run: |
@@ -68,9 +74,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
-      - name: Run VS Code extension-host tests
-        run: xvfb-run -a npm run test:extension
-
       - name: Package and inspect VSIX
         run: |
           npm run package
@@ -78,3 +81,48 @@ jobs:
 
       - name: Build Python package
         run: uv build --project tools
+
+  extension-tests:
+    name: Extension host (VS Code ${{ matrix.vscode }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Exercise the declared engines.vscode minimum and the latest stable build.
+        vscode: ["1.90.2", "stable"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Run VS Code extension-host tests
+        run: xvfb-run -a npm run test:extension
+        env:
+          VSCODE_TEST_VERSION: ${{ matrix.vscode }}
+
+  package-smoke:
+    name: Packaged VSIX smoke test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Install the packaged VSIX into a clean profile and smoke-test it
+        run: xvfb-run -a npm run test:smoke

@@ -25,13 +25,19 @@ test("schema v2 carries rich examples and specialized value metadata", () => {
   assert.equal(swap?.values?.find((value) => value.name === "innerMorph")?.versions?.[0], "4");
   assert.equal(swap?.values?.find((value) => value.name === "swap:")?.insertText, "swap:${1:500ms}");
   assert.ok(catalog.resolve("hx-ext")?.attribute?.values?.some((value) => value.documentation));
-  assert.equal(catalog.resolve("hx-target")?.attribute?.values?.find((value) => value.name === "closest")?.insertText, "closest ${1:selector}");
+  assert.equal(
+    catalog.resolve("hx-target")?.attribute?.values?.find((value) => value.name === "closest")?.insertText,
+    "closest ${1:selector}",
+  );
 });
 
 test("data-hx aliases normalize without duplicate catalog entries", () => {
   assert.equal(normalizeAttributeName("data-hx-get"), "hx-get");
   assert.equal(catalog.resolve("data-hx-get")?.canonicalName, "hx-get");
-  assert.equal(catalog.data.attributes.some((entry) => entry.name.startsWith("data-hx-")), false);
+  assert.equal(
+    catalog.data.attributes.some((entry) => entry.name.startsWith("data-hx-")),
+    false,
+  );
 });
 
 test("dynamic issue regressions resolve", () => {

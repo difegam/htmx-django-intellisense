@@ -12,8 +12,13 @@ import {
 async function main(): Promise<void> {
   const extensionDevelopmentPath = path.resolve(__dirname, "../..");
   const extensionTestsPath = path.resolve(__dirname, "suite/index");
-  const vscodeExecutablePath = await downloadAndUnzipVSCode("1.90.2");
+  // Defaults to the declared engines.vscode minimum; CI overrides this to also
+  // exercise the latest stable build (see VSCODE_TEST_VERSION in the matrix).
+  const vscodeExecutablePath = await downloadAndUnzipVSCode(process.env.VSCODE_TEST_VERSION ?? "1.90.2");
   const [cliPath, ...cliArgs] = resolveCliArgsFromVSCodeExecutablePath(vscodeExecutablePath);
+  if (cliPath === undefined) {
+    throw new Error("Unable to resolve the VS Code CLI path from the test runtime");
+  }
   const install = spawnSync(
     cliPath,
     [...cliArgs, "--install-extension", "batisteo.vscode-django", "--force"],

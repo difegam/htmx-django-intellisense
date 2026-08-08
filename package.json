@@ -6,7 +6,9 @@
   "publisher": "difegam",
   "license": "Apache-2.0",
   "preview": true,
-  "extensionKind": ["ui"],
+  "extensionKind": [
+    "ui"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/difegam/htmx-django-intellisense"
@@ -99,13 +101,18 @@
     "bundle:watch": "node esbuild.js --watch",
     "compile": "tsc -p ./",
     "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "knip": "knip",
     "check-types": "tsc -p ./ --noEmit --incremental false",
     "build-data": "uv run --project tools htmx-tools build-data",
     "build-snippets": "uv run --project tools htmx-tools build-snippets",
     "check-snippets": "uv run --project tools htmx-tools build-snippets --check",
     "test": "npm run test:unit && npm run check-snippets && uv run --project tools pytest -c tools/pyproject.toml tools/tests",
     "test:unit": "npm run compile && node --test out/test/*.test.js",
+    "test:coverage": "npm run compile && node --test --experimental-test-coverage out/test/*.test.js",
     "test:extension": "npm run compile && npm run bundle && node out/test/runTest.js",
+    "test:smoke": "npm run compile && npm run package && node out/test/runSmoke.js",
     "capture-screenshots": "bash scripts/regenerate-demo-assets.sh",
     "package": "vsce package"
   },
@@ -118,6 +125,8 @@
     "@vscode/vsce": "^3.6.2",
     "esbuild": "^0.28.1",
     "eslint": "^9.26.0",
+    "knip": "^5.64.4",
+    "prettier": "^3.7.1",
     "typescript": "^5.8.3"
   },
   "extensionDependencies": [

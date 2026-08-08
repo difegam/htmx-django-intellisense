@@ -8,13 +8,17 @@ Run from repo root. `just` recipes wrap the same commands.
 
 - Install: `npm install` then `uv sync --project tools --frozen --all-groups`.
 - Lint TS: `npm run lint` (eslint) · `npm run check-types` (tsc --noEmit)
+- Format TS/JS/JSON: `npm run format` (prettier --write) · `npm run format:check` (CI gate). Prettier owns formatting; ESLint owns correctness. Markdown is formatted by mdformat and Python by ruff (see `.prettierignore`).
+- Dead code: `npm run knip` (unused files/exports/deps; config in `knip.json`)
 - Lint Python: `uv run --project tools ruff check tools` · `uv run --project tools ruff format --check tools`
 - Type-check Python: `uv run --project tools pyrefly check --config tools/pyproject.toml`
 - Full test: `npm test` (runs `npm run test:unit`, `check-snippets`, and `uv run --project tools pytest -c tools/pyproject.toml tools/tests`)
 - TS unit only: `npm run test:unit` (compiles first, then `node --test out/test/*.test.js`)
+- TS unit + coverage: `npm run test:coverage` (adds `--experimental-test-coverage`; CI reports this, no threshold gate yet)
 - Python only: `uv run --project tools pytest -c tools/pyproject.toml tools/tests`
 - Single Python test: `uv run --project tools pytest -c tools/pyproject.toml tools/tests/test_build_data.py::test_name -q`
-- Extension-host tests: `npm run test:extension` — downloads VS Code 1.90.2, installs `batisteo.vscode-django`, runs `src/test/suite/index.ts`. On Linux CI uses `xvfb-run -a`; locally on macOS no wrapper needed.
+- Extension-host tests: `npm run test:extension` — downloads VS Code (`VSCODE_TEST_VERSION`, default `1.90.2`), installs `batisteo.vscode-django`, runs `src/test/suite/index.ts`. On Linux CI uses `xvfb-run -a`; locally on macOS no wrapper needed. CI runs this as a matrix over the `1.90.2` minimum and `stable`.
+- Packaged-VSIX smoke test: `npm run test:smoke` — compiles, packages, installs the `.vsix` into a throwaway profile, and asserts activation + one completion via `src/test/smoke/index.ts`. Override the download with `VSCODE_TEST_VERSION=1.90.2` to reuse the cached build.
 - Compile (no test): `npm run compile`
 - Package VSIX: `npm run package`
 
@@ -28,7 +32,7 @@ CI also runs `uv run --project tools htmx-tools check-pins` (or `just check-pins
 
 ## CI order (match this locally before pushing)
 
-`npm run lint` → `npm run check-types` → `uv run --project tools ruff check tools` + `uv run --project tools ruff format --check tools` → `uv run --project tools pyrefly check --config tools/pyproject.toml` → `uv run --project tools pytest -c tools/pyproject.toml tools/tests` → `npm run test:unit` → `npm run build-data` (then verify catalog diff is clean) → `npm run build-snippets` (then verify `snippets/django-htmx.json` and `docs/reference/snippets.md` diffs are clean) → `npm run test:extension` → `npm run package` → `npx vsce ls --tree` → `uv build --project tools`.
+`npm run lint` → `npm run format:check` → `npm run check-types` → `npm run knip` → `uv run --project tools ruff check tools` + `uv run --project tools ruff format --check tools` → `uv run --project tools pyrefly check --config tools/pyproject.toml` → `uv run --project tools pytest -c tools/pyproject.toml tools/tests` → `npm run test:coverage` → `npm run build-data` (then verify catalog diff is clean) → `npm run build-snippets` (then verify `snippets/django-htmx.json` and `docs/reference/snippets.md` diffs are clean) → `npm run package` → `npx vsce ls --tree` → `uv build --project tools`. Separate CI jobs run the extension-host tests (`npm run test:extension`, matrix over VS Code `1.90.2`/`stable`) and the packaged-VSIX smoke test (`npm run test:smoke`).
 
 ## Match CI locally
 

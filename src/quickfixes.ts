@@ -31,11 +31,11 @@ export function editDistance(a: string, b: string): number {
     current[0] = row;
     for (let col = 1; col < cols; col++) {
       const cost = a[row - 1] === b[col - 1] ? 0 : 1;
-      current[col] = Math.min(previous[col] + 1, current[col - 1] + 1, previous[col - 1] + cost);
+      current[col] = Math.min(previous[col]! + 1, current[col - 1]! + 1, previous[col - 1]! + cost);
     }
     [previous, current] = [current, previous];
   }
-  return previous[cols - 1];
+  return previous[cols - 1]!;
 }
 
 function nearestNames(target: string, candidates: readonly string[], limit = 3): string[] {
@@ -67,14 +67,15 @@ function unknownAttributeFixes(
 
 function deprecatedAttributeFixes(diagnostic: DiagnosticLike, index: number): QuickFix[] {
   const successor = /\buse\s+(hx-[a-z0-9-]+)/i.exec(diagnostic.message);
-  if (successor === null) {
+  const replacement = successor?.[1];
+  if (replacement === undefined) {
     return [];
   }
   return [
     {
-      title: `Replace with '${successor[1]}'`,
+      title: `Replace with '${replacement}'`,
       diagnosticIndex: index,
-      edits: [{ start: diagnostic.start, end: diagnostic.end, newText: successor[1] }],
+      edits: [{ start: diagnostic.start, end: diagnostic.end, newText: replacement }],
       isPreferred: true,
     },
   ];

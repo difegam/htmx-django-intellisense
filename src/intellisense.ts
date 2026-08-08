@@ -48,11 +48,12 @@ export function attributeMetadataLabel(
   mode: HtmxVersionMode,
 ): string {
   const entries = categoryEntries(categories, mode, versions);
-  if (entries.length === 0) {
+  const [first] = entries;
+  if (first === undefined) {
     return versionsLabel(versions);
   }
   if (mode !== "compatible") {
-    return `${entries[0][1]} Attribute · HTMX ${entries[0][0]}`;
+    return `${first[1]} Attribute · HTMX ${first[0]}`;
   }
   return entries.map(([major, category]) => `HTMX ${major}: ${category}`).join(" · ");
 }
@@ -149,10 +150,10 @@ export function documentationMarkdown(subject: DocumentationSubject): vscode.Mar
   markdown.appendMarkdown(`$(versions) **${versionsLabel(subject.versions)}**\n\n`);
   const categories = categoryEntries(subject.categories, subject.mode, subject.versions);
   if (categories.length > 0) {
-    const label = categories
-      .map(([major, category]) => `HTMX ${major}: ${category} Attribute`)
-      .join(" · ");
-    markdown.appendMarkdown(`$(symbol-enum) **${categories.length === 1 ? "Category" : "Categories"}:** ${label}\n\n`);
+    const label = categories.map(([major, category]) => `HTMX ${major}: ${category} Attribute`).join(" · ");
+    markdown.appendMarkdown(
+      `$(symbol-enum) **${categories.length === 1 ? "Category" : "Categories"}:** ${label}\n\n`,
+    );
   }
   markdown.appendMarkdown(`${subject.description.trim()}\n\n`);
 
@@ -189,13 +190,14 @@ export function documentationMarkdown(subject: DocumentationSubject): vscode.Mar
       return left === subject.mode ? -1 : right === subject.mode ? 1 : left.localeCompare(right);
     })
     .map(([major, url]) => `$(book) [HTMX ${major} docs](${url})`);
-  if (subject.relatedDocumentation !== undefined && !Object.values(subject.documentation).includes(subject.relatedDocumentation)) {
+  if (
+    subject.relatedDocumentation !== undefined &&
+    !Object.values(subject.documentation).includes(subject.relatedDocumentation)
+  ) {
     links.push(`$(link-external) [Value docs](${subject.relatedDocumentation})`);
   }
   if (example !== undefined) {
-    links.push(
-      `$(copy) [Copy example](${commandUri(COPY_EXAMPLE_COMMAND, [{ text: example }])})`,
-    );
+    links.push(`$(copy) [Copy example](${commandUri(COPY_EXAMPLE_COMMAND, [{ text: example }])})`);
   }
   links.push(`$(settings-gear) [HTMX settings](${commandUri(OPEN_SETTINGS_COMMAND)})`);
   markdown.appendMarkdown(`---\n\n${links.join(" · ")}`);

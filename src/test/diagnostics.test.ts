@@ -16,8 +16,16 @@ test("compatible mode accepts issue regressions and unrelated attributes", () =>
 });
 
 test("unknown attributes and closed invalid values warn", () => {
-  const issues = analyzeDocument(`<form hx-methd="post" hx-method="trace"></form>`, "html", catalog, "compatible");
-  assert.deepEqual(issues.map((issue) => issue.code), ["unknown-attribute", "invalid-value"]);
+  const issues = analyzeDocument(
+    `<form hx-methd="post" hx-method="trace"></form>`,
+    "html",
+    catalog,
+    "compatible",
+  );
+  assert.deepEqual(
+    issues.map((issue) => issue.code),
+    ["unknown-attribute", "invalid-value"],
+  );
 });
 
 test("incomplete attribute prefixes do not warn while typing", () => {
@@ -49,5 +57,8 @@ test("Django partial duplicates and unknown references warn", () => {
     catalog,
     "compatible",
   );
-  assert.deepEqual(issues.map((issue) => issue.code), ["duplicate-partial", "unknown-partial"]);
+  assert.deepEqual(
+    issues.map((issue) => issue.code),
+    ["duplicate-partial", "unknown-partial"],
+  );
 });
