@@ -6,7 +6,7 @@
   "publisher": "difegam",
   "license": "Apache-2.0",
   "preview": true,
-  "extensionKind": ["ui"],
+  "extensionKind": ["workspace"],
   "repository": {
     "type": "git",
     "url": "https://github.com/difegam/htmx-django-intellisense"

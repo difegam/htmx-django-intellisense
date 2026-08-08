@@ -66,17 +66,19 @@ export function analyzeDocument(
     const entry = resolved.attribute;
     if (
       entry?.strictValues === true &&
+      entry.values !== undefined &&
+      entry.values.length > 0 &&
       attribute.value !== undefined &&
       attribute.valueClosed === true &&
       attribute.value.trim() !== "" &&
       !containsTemplateExpression(attribute.value)
     ) {
-      const allowed = new Set(entry.values?.map((value) => value.name.toLowerCase()));
+      const allowed = new Set(entry.values.map((value) => value.name.toLowerCase()));
       if (!allowed.has(attribute.value.trim().toLowerCase())) {
         issues.push({
           start: attribute.valueStart ?? attribute.nameStart,
           end: attribute.valueEnd ?? attribute.nameEnd,
-          message: `Invalid value for '${attribute.name}'. Expected ${[...allowed].join(", ")}.`,
+          message: `Invalid value for '${attribute.name}'. Expected ${entry.values.map((value) => value.name).join(", ")}.`,
           severity: "warning",
           code: "invalid-value",
         });

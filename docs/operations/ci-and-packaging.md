@@ -10,6 +10,7 @@ The CI workflow verifies source quality, catalog determinism, extension-host beh
 1. runs ESLint, TypeScript type checking, Ruff checks, Pyrefly checks, and Python tests;
 1. runs TypeScript unit tests;
 1. regenerates `htmx.catalog.json`, `snippets/django-htmx.json`, and `docs/reference/snippets.md`, then checks for diffs;
+1. validates HTMX pin freshness and builds the documentation with strict warnings;
 1. runs VS Code extension-host smoke tests through Xvfb;
 1. packages and lists the VSIX contents.
 

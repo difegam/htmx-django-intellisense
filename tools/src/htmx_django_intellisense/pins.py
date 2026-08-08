@@ -48,6 +48,7 @@ def _fetch_tags(client: httpx2.Client | None = None) -> list[str]:
         for page in range(1, MAX_PAGES + 1):
             try:
                 response = client.get(GITHUB_API, params={"per_page": 100, "page": page})
+                response.raise_for_status()
                 payload = response.json()
             except httpx2.HTTPError as exc:
                 raise RuntimeError(f"Unable to reach GitHub tags API: {exc}") from exc

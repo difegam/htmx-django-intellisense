@@ -34,3 +34,15 @@ def test_fetch_tags_uses_github_token(monkeypatch: pytest.MonkeyPatch) -> None:
     assert len(captured_requests) == 1
     assert captured_headers[0]["Authorization"] == "Bearer test-token"
     assert captured_requests[0].headers["Authorization"] == "Bearer test-token"
+
+
+def test_fetch_tags_rejects_http_errors(monkeypatch: pytest.MonkeyPatch) -> None:
+    def handler(_request: httpx2.Request) -> httpx2.Response:
+        return httpx2.Response(403, json={"message": "rate limit exceeded"})
+
+    def fake_make_client(**kwargs: Any) -> httpx2.Client:
+        return httpx2.Client(transport=httpx2.MockTransport(handler), **kwargs)
+
+    monkeypatch.setattr(pins, "make_client", fake_make_client)
+    with pytest.raises(RuntimeError, match=r"Unable to reach GitHub tags API.*403"):
+        pins._fetch_tags()

@@ -36,7 +36,8 @@ jobs:
           cache-dependency-glob: tools/uv.lock
 
       - name: Set up Python
-        run: uv python install   # honors tools/.python-version (3.14)
+        working-directory: tools
+        run: uv python install
 
       - name: Install docs dependencies
         run: uv sync --project tools --frozen --no-dev --group docs

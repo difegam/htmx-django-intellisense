@@ -180,7 +180,7 @@ const SCRIPT_CLOSE = /<\/script\s*>/gi;
 const STYLE_CLOSE = /<\/style\s*>/gi;
 
 function maskIgnoredDjangoRegions(text: string): string {
-  const chars = [...text];
+  const chars = text.split("");
   const mask = (start: number, end: number): void => {
     for (let index = start; index < end; index++) {
       chars[index] = " ";
