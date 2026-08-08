@@ -36,11 +36,11 @@ def test_f5_launch_keeps_the_django_dependency_enabled() -> None:
 def test_public_configuration_defaults() -> None:
     manifest = _read_json(ROOT / "package.json")
     settings = manifest["contributes"]["configuration"]["properties"]
-    assert settings["htmxTags.enableCompletion"]["default"] is True
-    assert settings["htmxTags.enableHover"]["default"] is True
-    assert settings["htmxTags.enableValidation"]["default"] is True
-    assert settings["htmxTags.version"]["default"] == "compatible"
-    assert settings["htmxTags.version"]["enum"] == ["compatible", "2", "4"]
+    assert settings["htmxDjango.enableCompletion"]["default"] is True
+    assert settings["htmxDjango.enableHover"]["default"] is True
+    assert settings["htmxDjango.enableValidation"]["default"] is True
+    assert settings["htmxDjango.version"]["default"] == "compatible"
+    assert settings["htmxDjango.version"]["enum"] == ["compatible", "2", "4"]
 
 
 def test_django_snippets_are_registered() -> None:

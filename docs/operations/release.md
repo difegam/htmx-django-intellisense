@@ -26,13 +26,13 @@ and Open VSX (`ovsx publish`). Pushing a tag alone does not publish.
 
 1. Tag the release commit and push the tag:
 
-   ```bash
-   git tag v<version>
-   git push --tags
-   ```
+    ```bash
+    git tag v<version>
+    git push --tags
+    ```
 
 1. Create the corresponding GitHub release from that tag with release notes. Publishing
-   the release starts the workflow.
+    the release starts the workflow.
 
 If you must publish manually, use `npx vsce publish` for the Marketplace and
 `npx ovsx publish htmx-django-intellisense-*.vsix -p "$OVSX_PAT"` for Open VSX.

@@ -4,7 +4,7 @@ default_install_hook_types:
   - pre-push
 default_language_version:
   python: "3.14"
-exclude: '^(\\.venv|out|dist|build)/'
+exclude: '^(\.venv|out|dist|build)/'
 
 repos:
   - repo: builtin
@@ -28,7 +28,7 @@ repos:
         name: enforce LF line endings
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.0
+    rev: v0.16.1
     hooks:
       - id: ruff-check
         name: lint Python
@@ -76,14 +76,40 @@ repos:
         language: system
         types_or: [ts, javascript, json]
       - id: pytest
-        name: run tests
+        name: run Python tests
         entry: uv run --project tools pytest -c tools/pyproject.toml tools/tests
         language: system
         pass_filenames: false
-        stages: [pre-push, manual]
+        stages: [pre-commit, manual]
       - id: pyrefly
         name: type check Python
         entry: uv run --project tools pyrefly check --config tools/pyproject.toml
         language: system
         pass_filenames: false
         require_serial: true
+      - id: eslint
+        name: lint TypeScript/JavaScript
+        entry: npm run lint
+        language: system
+        pass_filenames: false
+        types_or: [ts, javascript]
+        stages: [pre-commit]
+      - id: check-types
+        name: type check TypeScript
+        entry: npm run check-types
+        language: system
+        pass_filenames: false
+        types_or: [ts]
+        stages: [pre-push]
+      - id: test-unit
+        name: run TypeScript unit tests
+        entry: npm run test:unit
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+      - id: knip
+        name: check for dead code
+        entry: npm run knip
+        language: system
+        pass_filenames: false
+        stages: [pre-push]

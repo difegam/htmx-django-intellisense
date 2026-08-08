@@ -54,9 +54,16 @@ indent-style = "space"
 docstring-code-format = true
 docstring-code-line-length = "dynamic"
 
+[tool.ruff.lint.isort]
+# Explicit so import grouping is identical whether ruff is invoked as `ruff check tools`
+# (CI) or with passed file paths (pre-commit hook).
+known-first-party = ["htmx_django_intellisense"]
+
 [tool.ruff.lint.per-file-ignores]
-"src/htmx_django_intellisense/catalog.py" = ["E501"]
-"tests/*" = ["S101"]
+# `**/`-anchored so the ignores match regardless of how ruff resolves the project root
+# (CI `ruff check tools` vs. pre-commit passing `tools/tests/...` paths).
+"**/catalog.py" = ["E501"]
+"**/tests/**" = ["S101"]
 
 [tool.pyrefly]
 project-includes = ["src", "tests"]
