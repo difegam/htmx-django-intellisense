@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   lint-and-test:
     runs-on: ubuntu-latest
@@ -26,7 +29,8 @@ jobs:
           cache-dependency-glob: tools/uv.lock
 
       - name: Set up Python
-        run: uv python install # honors tools/.python-version (3.14)
+        working-directory: tools
+        run: uv python install
 
       - name: Install Node dependencies
         run: npm ci
@@ -68,6 +72,9 @@ jobs:
             htmx.catalog.json \
             snippets/django-htmx.json \
             docs/reference/snippets.md
+
+      - name: Validate documentation
+        run: uv run --project tools --group docs zensical build --clean --strict
 
       - name: Verify HTMX pins are current
         run: uv run --project tools htmx-tools check-pins

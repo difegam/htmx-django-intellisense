@@ -12,28 +12,21 @@ Release a version only after the committed catalog, source, docs, and VSIX have 
 ## Validate
 
 ```bash
-npm run lint
-npm run check-types
-npm test
-npm run test:extension
-just docs-strict
-npm run package
-npx vsce ls --tree
+just verify
 ```
 
 Sideload the generated VSIX and smoke test the completion, hover, diagnostic, and Django partial paths described in [CI and Packaging](ci-and-packaging.md).
 
 ## Publish
 
-Publishing is a maintainer action outside the normal validation workflow:
+After validation, create a GitHub release. The release workflow packages and publishes the extension to both the Visual Studio Marketplace and Open VSX:
 
 ```bash
-npx vsce publish
 git tag v<version>
 git push --tags
 ```
 
-Create the corresponding GitHub release with release notes linked to that tag.
+Create the corresponding GitHub release with release notes linked to that tag. If manual publishing is required, use `npx vsce publish` for the Marketplace and `npx ovsx publish htmx-django-intellisense-*.vsix -p "$OVSX_PAT"` for Open VSX.
 
 ## Rollback
 

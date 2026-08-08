@@ -51,6 +51,7 @@ verify:
     npm run build-data
     npm run build-snippets
     git diff --exit-code -- htmx.catalog.json snippets/django-htmx.json docs/reference/snippets.md
+    uv run --project tools htmx-tools check-pins
     npm run test:extension
     npm run test:smoke
     uv run --project tools --group docs zensical build --clean --strict

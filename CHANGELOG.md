@@ -15,8 +15,8 @@ The project follows [Keep a Changelog](https://keepachangelog.com/) conventions 
 - Packaged-VSIX smoke test (`npm run test:smoke`) that installs the built `.vsix` into a clean profile and asserts activation.
 - Extension-host CI matrix over the `1.90.2` minimum and `stable` VS Code (`VSCODE_TEST_VERSION`).
 - GitHub-native security automation: Dependabot, CodeQL, and Dependency Review workflows.
-- HTMX pin staleness guard in CI (`scripts/check-htmx-pins.py`) that fails when the pinned upstream tags drift from the latest `bigskysoftware/htmx` git tags.
-- `extensionKind: ["ui"]` so the extension activates on the local UI host under SSH/remote/Dev Containers.
+- HTMX pin staleness guard in CI (`uv run --project tools htmx-tools check-pins`) that fails when the pinned upstream tags drift from the latest `bigskysoftware/htmx` git tags.
+- `extensionKind: ["workspace"]` so the extension can access workspace files under SSH/remote/Dev Containers.
 - `.vscode/launch.json` "Run Extension" config for F5-attach debugging.
 
 ### Changed

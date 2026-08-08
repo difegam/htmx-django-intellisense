@@ -16,7 +16,7 @@ from htmx_django_intellisense.models import (
     validate_source,
 )
 
-ROOT = Path.cwd()
+ROOT = Path(__file__).resolve().parents[3]
 SOURCE_FILE = ROOT / "snippets" / "django-htmx.source.json"
 SNIPPET_FILE = ROOT / "snippets" / "django-htmx.json"
 DOCS_FILE = ROOT / "docs" / "reference" / "snippets.md"

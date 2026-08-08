@@ -61,11 +61,24 @@ class CdpClient {
   private constructor(socket: WebSocket) {
     this.socket = socket;
     socket.addEventListener("message", (event) => {
-      const message = JSON.parse(String(event.data)) as { id?: number; result?: unknown };
-      if (message.id !== undefined) {
-        this.pending.get(message.id)?.resolve(message.result);
-        this.pending.delete(message.id);
+      const message = JSON.parse(String(event.data)) as {
+        id?: number;
+        result?: unknown;
+        error?: { message?: string };
+      };
+      if (message.id === undefined) {
+        return;
       }
+      const request = this.pending.get(message.id);
+      this.pending.delete(message.id);
+      if (request === undefined) {
+        return;
+      }
+      if (message.error !== undefined) {
+        request.reject(new Error(`CDP error: ${message.error.message ?? "unknown"}`));
+        return;
+      }
+      request.resolve(message.result);
     });
     const rejectPending = (reason: Error): void => {
       for (const request of this.pending.values()) {
@@ -90,10 +103,27 @@ class CdpClient {
 
   async send<T>(method: string, params: Record<string, unknown> = {}): Promise<T> {
     const id = this.nextId++;
-    const result = new Promise<T>((resolve, reject) =>
-      this.pending.set(id, { resolve: (value) => resolve(value as T), reject }),
-    );
-    this.socket.send(JSON.stringify({ id, method, params }));
+    const result = new Promise<T>((resolve, reject) => {
+      const timer = setTimeout(() => {
+        this.pending.delete(id);
+        reject(new Error(`CDP request '${method}' timed out`));
+      }, 30_000);
+      this.pending.set(id, {
+        resolve: (value) => {
+          clearTimeout(timer);
+          resolve(value as T);
+        },
+        reject: (reason) => {
+          clearTimeout(timer);
+          reject(reason);
+        },
+      });
+    });
+    try {
+      this.socket.send(JSON.stringify({ id, method, params }));
+    } catch (error) {
+      this.pending.get(id)?.reject(error instanceof Error ? error : new Error(String(error)));
+    }
     return result;
   }
 

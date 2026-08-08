@@ -82,7 +82,7 @@ test("scanner ignores partial-looking text inside script and style blocks", () =
 });
 
 test("partialSpansByName collects the definition and every same-name reference", () => {
-  const text = `{% partialdef card %}<article></article>{% endpartialdef %}\n{% partial card %}\n{% partial card %}\n{% partial other %}`;
+  const text = `😀{% partialdef card %}<article></article>{% endpartialdef %}\n{% partial card %}\n{% partial card %}\n{% partial other %}`;
   const spans = partialSpansByName(scanDocument(text), "card");
   assert.equal(spans.filter((span) => span.kind === "definition").length, 1);
   assert.equal(spans.filter((span) => span.kind === "reference").length, 2);

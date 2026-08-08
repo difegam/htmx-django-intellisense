@@ -4,12 +4,13 @@ The CI workflow verifies source quality, catalog determinism, extension-host beh
 
 ## CI checks
 
-`.github/workflows/ci.yml` runs on pushes and pull requests for `main` and `master`:
+`.github/workflows/verify.yml` runs on pushes and pull requests for `main`:
 
 1. installs Node 22, Python 3.14, npm dependencies, and the locked uv environment;
 1. runs ESLint, TypeScript type checking, Ruff checks, Pyrefly checks, and Python tests;
 1. runs TypeScript unit tests;
 1. regenerates `htmx.catalog.json`, `snippets/django-htmx.json`, and `docs/reference/snippets.md`, then checks for diffs;
+1. validates HTMX pin freshness and builds the documentation with strict warnings;
 1. runs VS Code extension-host smoke tests through Xvfb;
 1. packages and lists the VSIX contents.
 
