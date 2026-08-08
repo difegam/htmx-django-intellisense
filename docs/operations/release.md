@@ -19,11 +19,12 @@ Sideload the generated VSIX and smoke test the completion, hover, diagnostic, an
 
 ## Publish
 
-Publishing is triggered by **publishing a non-draft GitHub release**. The
-`.github/workflows/publish.yml` workflow (`on: release`) packages the extension and
-publishes it to both the Visual Studio Marketplace (`vsce publish --azure-credential`)
-and Open VSX (`ovsx publish`). Pushing a tag alone does not publish, and creating a
-draft release does not trigger publication.
+Publishing is triggered by **publishing a non-draft, non-prerelease GitHub release**.
+The `.github/workflows/publish.yml` workflow checks that the release tag version
+matches `package.json`, runs the complete verification gate, packages one VSIX, and
+publishes that same artifact to both the Visual Studio Marketplace and Open VSX.
+Pushing a tag alone does not publish, and creating or publishing a prerelease does not
+publish to either registry.
 
 1. Tag the release commit and push the tag:
 
@@ -32,17 +33,17 @@ draft release does not trigger publication.
     git push origin v<version>
     ```
 
-1. Create and publish the corresponding non-draft GitHub release from that tag with
-    release notes. Publishing the release starts the workflow.
+1. Create and publish the corresponding non-draft, non-prerelease GitHub release from
+    that tag with release notes. The tag version must match `package.json`. Publishing
+    the release starts the workflow.
 
-If you must publish manually, package the VSIX first, then use `npx vsce publish` for
-the Marketplace and `npx ovsx publish htmx-django-intellisense-*.vsix -p "$OVSX_PAT"`
-for Open VSX:
+If you must publish manually, package the VSIX first, then use the locked local CLIs
+for the Marketplace and Open VSX:
 
 ```bash
 npm run package
-npx vsce publish
-npx ovsx publish htmx-django-intellisense-*.vsix -p "$OVSX_PAT"
+npm exec --offline -- vsce publish
+OVSX_PAT="$OVSX_PAT" npm exec --offline -- ovsx publish htmx-django-intellisense-*.vsix
 ```
 
 ## Rollback

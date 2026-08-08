@@ -2,27 +2,34 @@ name: Publish Extension
 
 on:
   release:
-    types: [created]
+    types: [published]
 
 permissions:
   contents: read
-  id-token: write # required for Entra workload identity federation
+
+concurrency:
+  group: publish-extension-${{ github.event.release.tag_name }}
+  cancel-in-progress: false
 
 jobs:
-  publish:
+  build:
+    name: Validate and package
+    if: ${{ !github.event.release.prerelease }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
+      - name: Checkout release tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.release.tag_name }}
 
       - name: Setup Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22
           cache: npm
 
       - name: Setup uv
-        uses: astral-sh/setup-uv@v9.0.0
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
           enable-cache: true
           cache-dependency-glob: tools/uv.lock
@@ -31,46 +38,121 @@ jobs:
         working-directory: tools
         run: uv python install
 
-      - name: Azure login (Entra workload identity federation)
-        uses: azure/login@v3
-        with:
-          client-id: ${{ vars.AZURE_CLIENT_ID }}
-          tenant-id: ${{ vars.AZURE_TENANT_ID }}
-          allow-no-subscriptions: true
-
       - name: Install Node dependencies
         run: npm ci
 
       - name: Install Python dependencies
         run: uv sync --project tools --frozen --all-groups
 
-      - name: Lint and type-check
+      - name: Validate release version
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        shell: bash
         run: |
-          npm run lint
-          npm run check-types
-          uv run --project tools ruff check tools
-          uv run --project tools ruff format --check tools
-          uv run --project tools pyrefly check --config tools/pyproject.toml
+          set -euo pipefail
 
-      - name: Test
-        run: |
-          uv run --project tools pytest -c tools/pyproject.toml tools/tests
-          npm run test:unit
+          tag_version="${RELEASE_TAG#v}"
+          package_version="$(node -p "require('./package.json').version")"
 
-      - name: Verify generated artifacts are current
+          if [[ "$tag_version" != "$package_version" ]]; then
+            echo "::error::Release tag version ($tag_version) does not match package.json version ($package_version)"
+            exit 1
+          fi
+
+      - name: Validate and package
+        run: xvfb-run -a just verify
+
+      - name: Capture packaged VSIX
+        shell: bash
         run: |
-          npm run build-data
-          npm run build-snippets
-          git diff --exit-code -- \
-            htmx.catalog.json \
-            snippets/django-htmx.json \
-            docs/reference/snippets.md
+          set -euo pipefail
+
+          shopt -s nullglob
+          vsix_files=(htmx-django-intellisense-*.vsix)
+
+          if (( ${#vsix_files[@]} != 1 )); then
+            echo "::error::Expected exactly one VSIX, found ${#vsix_files[@]}"
+            printf '%s\n' "${vsix_files[@]}"
+            exit 1
+          fi
+
+          mv -- "${vsix_files[0]}" extension.vsix
+
+      - name: Upload VSIX
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: extension-vsix
+          path: extension.vsix
+          if-no-files-found: error
+          retention-days: 7
+
+  publish-marketplace:
+    name: Publish to VS Code Marketplace
+    needs: build
+    if: ${{ !github.event.release.prerelease }}
+    runs-on: ubuntu-latest
+    environment: vscode-marketplace
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout release tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Download VSIX
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: extension-vsix
+          path: dist
+
+      - name: Azure login (Entra workload identity federation)
+        uses: azure/login@f5d393ae46f8fde4be8b75f32e3fc50e654ad0ca # v3.0.0
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          allow-no-subscriptions: true
 
       - name: Publish to Marketplace
-        run: npx vsce publish --azure-credential
+        run: npm exec --offline -- vsce publish --azure-credential --packagePath dist/extension.vsix
 
-      - name: Package VSIX
-        run: npm run package
+  publish-open-vsx:
+    name: Publish to Open VSX
+    needs: build
+    if: ${{ !github.event.release.prerelease }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout release tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Download VSIX
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: extension-vsix
+          path: dist
 
       - name: Publish to Open VSX
-        run: npx ovsx publish htmx-django-intellisense-*.vsix -p ${{ secrets.OVSX_PAT }}
+        run: npm exec --offline -- ovsx publish dist/extension.vsix
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
