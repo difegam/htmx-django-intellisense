@@ -6,7 +6,7 @@ Two toolchains in one repo: a TypeScript VS Code extension (`src/`) and its runt
 
 Run from repo root. `just` recipes wrap the same commands.
 
-- Install: `just init` — runs `npm install`, `uv sync --project tools --frozen --all-groups`, and installs the prek git hooks (`prek install --hook-type pre-commit --hook-type pre-push`). Run this after cloning: a checkout without the hooks installed has **no** local safety net, so lint/type/test regressions only surface in CI. (Manual equivalent: `npm install` then `uv sync --project tools --frozen --all-groups`.)
+- Install: `just init` — runs `npm install`, `uv sync --project tools --frozen --all-groups`, and installs the prek git hooks (`prek install --hook-type pre-commit --hook-type pre-push`). Run this after cloning: a checkout without the hooks installed has **no** local safety net, so lint/type/test regressions only surface in CI. (Manual equivalent: `npm install`, `uv sync --project tools --frozen --all-groups`, then `uv run --project tools prek install --hook-type pre-commit --hook-type pre-push`.)
 - Lint TS: `npm run lint` (eslint) · `npm run check-types` (tsc --noEmit)
 - Format TS/JS/JSON: `npm run format` (prettier --write) · `npm run format:check` (CI gate). Prettier owns formatting; ESLint owns correctness. Markdown is formatted by mdformat and Python by ruff (see `.prettierignore`).
 - Dead code: `npm run knip` (unused files/exports/deps; config in `knip.json`)

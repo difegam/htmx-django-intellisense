@@ -41,6 +41,7 @@ def test_public_configuration_defaults() -> None:
     assert settings["htmxDjango.enableValidation"]["default"] is True
     assert settings["htmxDjango.version"]["default"] == "compatible"
     assert settings["htmxDjango.version"]["enum"] == ["compatible", "2", "4"]
+    assert not any(key.startswith("htmxTags.") for key in settings)
 
 
 def test_django_snippets_are_registered() -> None:

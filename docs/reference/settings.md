@@ -24,3 +24,9 @@ Settings are read through VS Code configuration for the active document, so they
 ```
 
 Changing an `htmxDjango` setting refreshes diagnostics for open supported documents.
+
+## Migration from `htmxTags`
+
+The settings namespace was renamed from `htmxTags` to `htmxDjango`. This is a
+breaking change: rename existing `htmxTags.*` entries in user, workspace, folder,
+and language-specific settings to their `htmxDjango.*` equivalents.

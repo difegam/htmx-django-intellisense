@@ -33,6 +33,7 @@ Everything below is pending the first release.
 
 ### Changed
 
+- Renamed the VS Code settings and command namespace from `htmxTags` to `htmxDjango`; migrate existing `htmxTags.*` settings before upgrading.
 - HTMX 4 pin bumped from `4.0.0-beta5` to `4.0.0-beta6`; catalog regenerated.
 - Catalog attribute and `hx-disinherit` completion lists are memoized per version mode, reducing per-keystroke allocation.
 - `vscode.workspace.findFiles` now caps at 2000 matches to avoid runaway completion latency on large monorepos.
