@@ -48,7 +48,7 @@ const ATTRIBUTE_PRIORITIES = [
 ];
 
 function configuration(document?: vscode.TextDocument): vscode.WorkspaceConfiguration {
-  return vscode.workspace.getConfiguration("htmxTags", document?.uri);
+  return vscode.workspace.getConfiguration("htmxDjango", document?.uri);
 }
 
 function versionMode(document: vscode.TextDocument): HtmxVersionMode {
@@ -933,7 +933,7 @@ export function activate(context: vscode.ExtensionContext): void {
       diagnostics.delete(document.uri);
     }),
     vscode.workspace.onDidChangeConfiguration((event) => {
-      if (event.affectsConfiguration("htmxTags")) {
+      if (event.affectsConfiguration("htmxDjango")) {
         for (const document of vscode.workspace.textDocuments) {
           updateDiagnostics(document);
         }

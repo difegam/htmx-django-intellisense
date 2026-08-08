@@ -4,11 +4,19 @@ Install HTMX Django IntelliSense in VS Code and verify that it activates for you
 
 ## Marketplace installation
 
+!!! note "Not published yet"
+
+    The extension is not yet available on the Visual Studio Marketplace or Open VSX.
+    Until the first release, install a locally packaged VSIX (see the tip under
+    [Verify](#verify)).
+
+Once published, install it from VS Code:
+
 1. Open **Extensions** in VS Code (`Ctrl/Cmd+Shift+X`).
 1. Search for **HTMX Django IntelliSense**.
 1. Install `difegam.htmx-django-intellisense`.
 
-The Marketplace listing is available at <https://marketplace.visualstudio.com/items?itemName=difegam.htmx-django-intellisense>.
+The listing will be available at <https://marketplace.visualstudio.com/items?itemName=difegam.htmx-django-intellisense>.
 
 ## Django templates
 

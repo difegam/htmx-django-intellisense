@@ -84,7 +84,7 @@ export async function run(): Promise<void> {
   assert.ok((hxGet.sortText ?? "") < (hxTarget?.sortText ?? ""));
   assert.match(markdownOf(hxGet.documentation), /```html/);
   assert.match(markdownOf(hxGet.documentation), /HTMX 2: Core Attribute · HTMX 4: Requests Attribute/);
-  assert.match(markdownOf(hxGet.documentation), /htmxTags\.copyExample/);
+  assert.match(markdownOf(hxGet.documentation), /htmxDjango\.copyExample/);
   assert.equal((hxGet.insertText as vscode.SnippetString).value, 'hx-get="$0"');
   assert.equal(
     hxItems.items.some((item) => labelOf(item) === "data-hx-get"),
@@ -168,7 +168,7 @@ export async function run(): Promise<void> {
   );
 
   await vscode.workspace
-    .getConfiguration("htmxTags")
+    .getConfiguration("htmxDjango")
     .update("version", "2", vscode.ConfigurationTarget.Global);
   assert.equal(
     (await valuesAt('<div hx-swap="">', 'hx-swap="')).some((item) => labelOf(item) === "innerMorph"),
@@ -181,7 +181,7 @@ export async function run(): Promise<void> {
     /Core Attribute · HTMX 2/,
   );
   await vscode.workspace
-    .getConfiguration("htmxTags")
+    .getConfiguration("htmxDjango")
     .update("version", "4", vscode.ConfigurationTarget.Global);
   assert.ok((await valuesAt('<div hx-swap="">', 'hx-swap="')).some((item) => labelOf(item) === "innerMorph"));
   const v4Items = await completions(html, new vscode.Position(0, 7));
@@ -196,7 +196,7 @@ export async function run(): Promise<void> {
     /Advanced Attribute · HTMX 4/,
   );
   await vscode.workspace
-    .getConfiguration("htmxTags")
+    .getConfiguration("htmxDjango")
     .update("version", "compatible", vscode.ConfigurationTarget.Global);
 
   const hoverDocument = await vscode.workspace.openTextDocument({
@@ -218,15 +218,15 @@ export async function run(): Promise<void> {
   assert.match(hoverMarkdown, /```html/);
   assert.match(hoverMarkdown, /HTMX 2 docs/);
   assert.match(hoverMarkdown, /HTMX 4 docs/);
-  assert.match(hoverMarkdown, /command:htmxTags\.copyExample/);
-  assert.match(hoverMarkdown, /command:htmxTags\.openSettings/);
+  assert.match(hoverMarkdown, /command:htmxDjango\.copyExample/);
+  assert.match(hoverMarkdown, /command:htmxDjango\.openSettings/);
 
   const commands = await vscode.commands.getCommands(true);
-  assert.ok(commands.includes("htmxTags.copyExample"));
-  assert.ok(commands.includes("htmxTags.openSettings"));
-  await vscode.commands.executeCommand("htmxTags.copyExample", { text: '<div hx-get="/items"></div>' });
+  assert.ok(commands.includes("htmxDjango.copyExample"));
+  assert.ok(commands.includes("htmxDjango.openSettings"));
+  await vscode.commands.executeCommand("htmxDjango.copyExample", { text: '<div hx-get="/items"></div>' });
   assert.equal(await vscode.env.clipboard.readText(), '<div hx-get="/items"></div>');
-  await vscode.commands.executeCommand("htmxTags.copyExample", { text: "" });
+  await vscode.commands.executeCommand("htmxDjango.copyExample", { text: "" });
   assert.equal(await vscode.env.clipboard.readText(), '<div hx-get="/items"></div>');
 
   const django = await vscode.workspace.openTextDocument({
@@ -351,7 +351,7 @@ export async function run(): Promise<void> {
   );
 
   await vscode.workspace
-    .getConfiguration("htmxTags")
+    .getConfiguration("htmxDjango")
     .update("version", "2", vscode.ConfigurationTarget.Global);
   const invalid = await vscode.workspace.openTextDocument({
     language: "django-html",
@@ -370,7 +370,7 @@ export async function run(): Promise<void> {
   assert.ok(actionTitles.includes("Replace with 'card'"));
   assert.ok(actionTitles.some((title) => title.startsWith("Create '{% partialdef car %}'")));
   await vscode.workspace
-    .getConfiguration("htmxTags")
+    .getConfiguration("htmxDjango")
     .update("version", "compatible", vscode.ConfigurationTarget.Global);
 
   const expressionDocument = await vscode.workspace.openTextDocument({
@@ -386,17 +386,17 @@ export async function run(): Promise<void> {
   );
 
   await vscode.workspace
-    .getConfiguration("htmxTags")
+    .getConfiguration("htmxDjango")
     .update("enableCompletion", false, vscode.ConfigurationTarget.Global);
   assert.equal(
     (await completions(html, new vscode.Position(0, 7))).items.some((item) => labelOf(item) === "hx-get"),
     false,
   );
   await vscode.workspace
-    .getConfiguration("htmxTags")
+    .getConfiguration("htmxDjango")
     .update("enableCompletion", true, vscode.ConfigurationTarget.Global);
   await vscode.workspace
-    .getConfiguration("htmxTags")
+    .getConfiguration("htmxDjango")
     .update("enableHover", false, vscode.ConfigurationTarget.Global);
   const disabledHovers = await vscode.commands.executeCommand<vscode.Hover[]>(
     "vscode.executeHoverProvider",
@@ -411,10 +411,10 @@ export async function run(): Promise<void> {
     /HTMX 2 docs/,
   );
   await vscode.workspace
-    .getConfiguration("htmxTags")
+    .getConfiguration("htmxDjango")
     .update("enableHover", true, vscode.ConfigurationTarget.Global);
   await vscode.workspace
-    .getConfiguration("htmxTags")
+    .getConfiguration("htmxDjango")
     .update("enableValidation", false, vscode.ConfigurationTarget.Global);
   await new Promise((resolve) => setTimeout(resolve, 50));
   assert.equal(
@@ -424,7 +424,7 @@ export async function run(): Promise<void> {
     false,
   );
   await vscode.workspace
-    .getConfiguration("htmxTags")
+    .getConfiguration("htmxDjango")
     .update("enableValidation", true, vscode.ConfigurationTarget.Global);
   await new Promise((resolve) => setTimeout(resolve, 50));
   assert.ok(

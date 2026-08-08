@@ -1,7 +1,7 @@
 [project]
 site_name = "HTMX Django IntelliSense"
 site_description = "Documentation for the HTMX 2/4 and Django template extension for VS Code."
-site_url = "https://github.com/difegam/htmx-django-intellisense"
+site_url = "https://difegam.github.io/htmx-django-intellisense/"
 repo_name = "difegam/htmx-django-intellisense"
 repo_url = "https://github.com/difegam/htmx-django-intellisense"
 docs_dir = "docs"
