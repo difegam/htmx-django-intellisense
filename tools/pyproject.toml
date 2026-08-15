@@ -7,7 +7,7 @@ authors = [{ name = "Diego Gamboa", email = "difegam3@gmail.com" }]
 requires-python = ">=3.14"
 dependencies = [
     "cyclopts>=4.22.5",
-    "httpx2>=2.9.1",
+    "httpx2>=2.10.0",
     "packaging>=26.3",
     "pydantic>=2.13.4",
 ]
