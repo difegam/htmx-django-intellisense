@@ -20,7 +20,7 @@ requires = ["uv_build>=0.12.1,<0.13.0"]
 build-backend = "uv_build"
 
 [dependency-groups]
-dev = ["prek>=0.4.12", "pyrefly>=1.2.0", "pytest>=9.1.1", "ruff>=0.16.1"]
+dev = ["prek>=0.4.13", "pyrefly>=1.2.0", "pytest>=9.1.1", "ruff>=0.16.1"]
 docs = ["zensical>=0.0.53"]
 
 [tool.uv]
