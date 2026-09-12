@@ -11,7 +11,9 @@ diagnostics, quick fixes, snippets, and Django 6 template partial support.
   <a href="https://github.com/difegam/htmx-django-intellisense/blob/main/LICENSE.txt">
     <img src="https://img.shields.io/badge/license-Apache%202.0-0C4B33" alt="License">
   </a>
-  <img src="https://img.shields.io/badge/HTMX-2%20%2F%204-0C4B33" alt="HTMX 2 / 4">
+  <a href="https://deepwiki.com/difegam/htmx-django-intellisense">
+      <img src="https://deepwiki.com/badge.svg" alt="DeepWiki">
+  </a>
   <br>
   <a href="https://marketplace.visualstudio.com/items?itemName=difegam.htmx-django-intellisense">
     <img src="https://img.shields.io/badge/VS%20Marketplace-v0.1.0-0C4B33" alt="VS Marketplace Version">
