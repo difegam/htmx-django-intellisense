@@ -5,8 +5,9 @@ The project follows [Keep a Changelog](https://keepachangelog.com/) conventions 
 
 ## [Unreleased]
 
-The extension has not been published to the Visual Studio Marketplace or Open VSX yet.
-Everything below is pending the first release.
+## [0.1.0] - 2026-09-12
+
+Initial public release.
 
 ### Added
 
