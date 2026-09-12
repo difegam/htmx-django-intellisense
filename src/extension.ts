@@ -936,7 +936,7 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand(OPEN_SETTINGS_COMMAND, () =>
       vscode.commands.executeCommand(
         "workbench.action.openSettings",
-        "@ext:difegam.htmx-django-intellisense",
+        "@ext:difegam3.htmx-django-intellisense",
       ),
     ),
     vscode.workspace.onDidOpenTextDocument(updateDiagnostics),

@@ -11,7 +11,7 @@ function labelOf(item: vscode.CompletionItem): string {
  * cleanly, and serve at least one HTMX completion from its bundled catalog.
  */
 export async function run(): Promise<void> {
-  const extension = vscode.extensions.getExtension("difegam.htmx-django-intellisense");
+  const extension = vscode.extensions.getExtension("difegam3.htmx-django-intellisense");
   assert.ok(extension, "packaged extension is installed and discoverable");
   await extension.activate();
 

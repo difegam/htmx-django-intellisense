@@ -67,7 +67,7 @@ async function valuesAt(content: string, marker: string): Promise<vscode.Complet
 }
 
 export async function run(): Promise<void> {
-  const extension = vscode.extensions.getExtension("difegam.htmx-django-intellisense");
+  const extension = vscode.extensions.getExtension("difegam3.htmx-django-intellisense");
   assert.ok(extension, "extension is discoverable");
   await extension.activate();
   await vscode.workspace

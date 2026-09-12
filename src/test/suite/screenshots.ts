@@ -33,7 +33,7 @@ async function insert(editor: vscode.TextEditor, text: string): Promise<void> {
 }
 
 export async function run(): Promise<void> {
-  const extension = vscode.extensions.getExtension("difegam.htmx-django-intellisense");
+  const extension = vscode.extensions.getExtension("difegam3.htmx-django-intellisense");
   assert.ok(extension, "extension is discoverable");
   await extension.activate();
   await vscode.workspace
