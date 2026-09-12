@@ -11,7 +11,7 @@ const catalog = new CatalogIndex(
 
 test("catalog contains both pinned HTMX versions", () => {
   assert.equal(catalog.data.schemaVersion, 2);
-  assert.deepEqual(catalog.data.generatedFrom, { htmx2: "2.0.10", htmx4: "4.0.0-beta6" });
+  assert.deepEqual(catalog.data.generatedFrom, { htmx2: "2.0.10", htmx4: "4.0.0" });
   assert.equal(catalog.resolve("hx-get")?.versions.join(","), "2,4");
   assert.deepEqual(catalog.resolve("hx-get")?.categories, { "2": "Core", "4": "Requests" });
   assert.deepEqual(catalog.resolve("hx-boost")?.categories, { "2": "Additional", "4": "Enhancements" });
@@ -48,4 +48,29 @@ test("dynamic issue regressions resolve", () => {
   assert.equal(catalog.resolve("hx-status:5xx")?.pattern?.name, "hx-status:<status>");
   assert.deepEqual(catalog.resolve("hx-on:click")?.categories, { "2": "Core", "4": "Scripting" });
   assert.equal(catalog.resolve("hx-target-404")?.categories, undefined);
+});
+
+test("HTMX 4 modifiers keep their own version and base value metadata", () => {
+  assert.deepEqual(catalog.resolve("hx-target:inherited")?.versions, ["4"]);
+  assert.equal(catalog.resolve("hx-config:append")?.attribute?.name, "hx-config");
+  assert.equal(catalog.resolve("hx-status:422")?.attribute?.name, "hx-status");
+  assert.ok(catalog.resolve("hx-status:422")?.attribute?.values?.some((value) => value.name === "swap:"));
+});
+
+test("stable release includes query, action and morph controls", () => {
+  for (const name of ["hx-query", "hx-action", "hx-morph-skip", "hx-morph-skip-children"]) {
+    assert.deepEqual(catalog.resolve(name)?.versions, ["4"]);
+  }
+});
+
+test("status inheritance and combined append modifiers resolve without losing values", () => {
+  assert.deepEqual(catalog.resolve("data-hx-status:422:inherited")?.versions, ["4"]);
+  assert.equal(catalog.resolve("data-hx-status:422:inherited")?.attribute?.name, "hx-status");
+  assert.equal(catalog.resolve("hx-config:inherited:append")?.attribute?.name, "hx-config");
+  assert.equal(catalog.resolve("hx-config:append:inherited"), undefined);
+});
+
+test("morph markers are literal selectors, not inheritable attributes", () => {
+  assert.equal(catalog.resolve("hx-morph-skip:inherited"), undefined);
+  assert.equal(catalog.resolve("hx-morph-skip-children:inherited"), undefined);
 });

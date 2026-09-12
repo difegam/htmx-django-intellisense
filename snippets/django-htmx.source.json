@@ -93,7 +93,7 @@
       "  <label for=\"${4:upload-file}\">${5:Choose a file}</label>",
       "  <input id=\"${4:upload-file}\" type=\"file\" name=\"${6:file}\" required>",
       "  <button type=\"submit\">${7:Upload}</button>",
-      "  <span id=\"${3:upload-indicator}\" class=\"htmx-indicator\" role=\"status\">Uploading…</span>",
+      "  <span id=\"${3:upload-indicator}\" class=\"htmx-indicator\" role=\"status\">Uploading\u2026</span>",
       "</form>",
       "<div id=\"${2:upload-result}\" aria-live=\"polite\"></div>"
     ],
@@ -148,6 +148,25 @@
     "usage": "The options view reads the selected parent value and returns option elements for the dependent select."
   },
   {
+    "name": "HTMX 4 validation response",
+    "prefix": "htmx-status-form",
+    "category": "Requests and forms",
+    "classification": "curated",
+    "description": "HTMX 4 Django form with status-specific validation handling",
+    "body": [
+      "<form method=\"post\" action=\"{% url '${1:view-name}' %}\"",
+      "      hx-post=\"{% url '${1:view-name}' %}\" hx-target=\"#${2:result}\"",
+      "      hx-status:422=\"swap:innerHTML target:#${3:errors}\" hx-status:5xx=\"swap:none\">",
+      "  {% csrf_token %}",
+      "  <div id=\"${3:errors}\" role=\"alert\"></div>",
+      "  $0",
+      "  <button type=\"submit\">${4:Save}</button>",
+      "</form>",
+      "<div id=\"${2:result}\"></div>"
+    ],
+    "usage": "Requires HTMX 4. Return validation HTML with status 422, and success HTML for the result container. Server error responses do not swap."
+  },
+  {
     "name": "HTMX Infinite Scroll",
     "prefix": "htmx-infinite",
     "category": "Loading and navigation",
@@ -159,7 +178,7 @@
       "       hx-trigger=\"revealed\"",
       "       hx-target=\"this\" hx-swap=\"outerHTML\"",
       "       role=\"status\">",
-      "    ${1:Loading…}",
+      "    ${1:Loading\u2026}",
       "  </div>",
       "{% endif %}"
     ],
@@ -177,7 +196,7 @@
       "     hx-target=\"this\"",
       "     hx-swap=\"outerHTML\"",
       "     role=\"status\" aria-live=\"polite\">",
-      "  ${4:Waiting…}",
+      "  ${4:Waiting\u2026}",
       "</div>"
     ],
     "usage": "The status view returns the same polling region while work continues and omits hx-trigger after completion."
@@ -194,7 +213,7 @@
       "         hx-target=\"this\"",
       "         hx-swap=\"outerHTML\"",
       "         aria-busy=\"true\">",
-      "  <p class=\"htmx-indicator\" role=\"status\">${2:Loading…}</p>",
+      "  <p class=\"htmx-indicator\" role=\"status\">${2:Loading\u2026}</p>",
       "</section>"
     ],
     "usage": "The fragment view returns the complete replacement section without aria-busy."
@@ -241,9 +260,9 @@
     "classification": "common",
     "description": "Replace a Django object summary with an edit form",
     "body": [
-      "<article hx-target=\"this\" hx-swap=\"outerHTML\">",
+      "<article>",
       "  <h2>{{ object }}</h2>",
-      "  <button type=\"button\" hx-get=\"{% url '${1:edit-view}' ${2:object.pk} %}\">${3:Edit}</button>",
+      "  <button type=\"button\" hx-target=\"closest article\" hx-swap=\"outerHTML\" hx-get=\"{% url '${1:edit-view}' ${2:object.pk} %}\">${3:Edit}</button>",
       "</article>"
     ],
     "usage": "The edit view returns a CSRF-protected form that targets and replaces itself after submission."
@@ -255,9 +274,9 @@
     "classification": "curated",
     "description": "Replace a Django table row with server-rendered editing controls",
     "body": [
-      "<tr id=\"${1:item}-{{ object.pk }}\" hx-target=\"this\" hx-swap=\"outerHTML\">",
+      "<tr id=\"${1:item}-{{ object.pk }}\">",
       "  <th scope=\"row\">{{ object }}</th>",
-      "  <td><button type=\"button\" hx-get=\"{% url '${2:edit-view}' ${3:object.pk} %}\">${4:Edit}</button></td>",
+      "  <td><button type=\"button\" hx-target=\"closest tr\" hx-swap=\"outerHTML\" hx-get=\"{% url '${2:edit-view}' ${3:object.pk} %}\">${4:Edit}</button></td>",
       "</tr>"
     ],
     "usage": "The edit view returns a complete replacement row containing a CSRF-protected update form."
@@ -305,6 +324,20 @@
     "usage": "The tabs view returns the complete section with updated tablist, aria-selected state, and panel content."
   },
   {
+    "name": "HTMX 4 morph refresh",
+    "prefix": "htmx-morph",
+    "category": "Editing and UI",
+    "classification": "curated",
+    "description": "HTMX 4 state-preserving refresh",
+    "body": [
+      "<section id=\"${1:live-region}\" hx-get=\"{% url '${2:fragment-view}' %}\"",
+      "         hx-trigger=\"every ${3:5s}\" hx-swap=\"innerMorph\">",
+      "  $0",
+      "</section>"
+    ],
+    "usage": "Requires HTMX 4. The view returns the region contents. Use stable element IDs to help morphing preserve focus and state."
+  },
+  {
     "name": "HTMX Out-of-band Swap",
     "prefix": "htmx-oob-swap",
     "category": "Server responses",
@@ -325,6 +358,19 @@
       "</div>"
     ],
     "usage": "Return this fragment with a primary response to append its status message to the existing notifications region."
+  },
+  {
+    "name": "HTMX 4 partial response",
+    "prefix": "htmx-partial-response",
+    "category": "Server responses",
+    "classification": "curated",
+    "description": "HTMX 4 response fragment with explicit target and swap",
+    "body": [
+      "<hx-partial hx-target=\"${1:#notifications}\" hx-swap=\"${2:append}\">",
+      "  $0",
+      "</hx-partial>"
+    ],
+    "usage": "Requires HTMX 4. Return one or more hx-partial elements to update multiple targets. This is an HTMX response element, separate from Django partialdef template tags."
   },
   {
     "name": "Django Partial Definition",

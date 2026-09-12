@@ -70,6 +70,9 @@ export async function run(): Promise<void> {
   const extension = vscode.extensions.getExtension("difegam.htmx-django-intellisense");
   assert.ok(extension, "extension is discoverable");
   await extension.activate();
+  await vscode.workspace
+    .getConfiguration("htmxDjango")
+    .update("version", "compatible", vscode.ConfigurationTarget.Global);
 
   const html = await vscode.workspace.openTextDocument({ language: "html", content: "<div hx" });
   const hxItems = await completions(html, new vscode.Position(0, 7));
@@ -96,6 +99,11 @@ export async function run(): Promise<void> {
       ?.tags?.includes(vscode.CompletionItemTag.Deprecated),
   );
   assert.ok(hxItems.items.some((item) => labelOf(item) === "hx-on:<event>"));
+  assert.equal(
+    (hxItems.items.find((item) => labelOf(item) === "hx-on::<event>")?.insertText as vscode.SnippetString)
+      .value,
+    'hx-on::${1:event}="$0"',
+  );
   assert.ok(hxItems.items.some((item) => labelOf(item) === "hx-target-<status>"));
   assert.ok(hxItems.items.some((item) => labelOf(item) === "hx-status:<status>"));
 
@@ -175,6 +183,15 @@ export async function run(): Promise<void> {
     false,
   );
   const v2Items = await completions(html, new vscode.Position(0, 7));
+  assert.equal(
+    v2Items.items.some((item) => labelOf(item).endsWith(":inherited")),
+    false,
+  );
+  assert.equal(
+    (v2Items.items.find((item) => labelOf(item) === "hx-on::<event>")?.insertText as vscode.SnippetString)
+      .value,
+    'hx-on::${1:before-request}="$0"',
+  );
   const v2Get = v2Items.items.find((item) => labelOf(item) === "hx-get");
   assert.match(
     typeof v2Get?.label === "string" ? "" : (v2Get?.label.detail ?? ""),
@@ -185,6 +202,36 @@ export async function run(): Promise<void> {
     .update("version", "4", vscode.ConfigurationTarget.Global);
   assert.ok((await valuesAt('<div hx-swap="">', 'hx-swap="')).some((item) => labelOf(item) === "innerMorph"));
   const v4Items = await completions(html, new vscode.Position(0, 7));
+  assert.equal(
+    (v4Items.items.find((item) => labelOf(item) === "hx-on::<event>")?.insertText as vscode.SnippetString)
+      .value,
+    'hx-on::${1:before:request}="$0"',
+  );
+  assert.ok((await valuesAt('<form hx-method="">', 'hx-method="')).some((item) => labelOf(item) === "query"));
+  assert.ok(
+    (await valuesAt('<form hx-status:422="">', 'hx-status:422="')).some((item) => labelOf(item) === "swap:"),
+  );
+  const statusValues = await valuesAt('<form hx-status:422="target:#errors ">', "target:#errors ");
+  assert.ok(statusValues.some((item) => labelOf(item) === "swap:"));
+  assert.equal(
+    statusValues.some((item) => labelOf(item) === "target:"),
+    false,
+  );
+  assert.ok(
+    (await valuesAt('<div hx-config:append="">', 'hx-config:append="')).some(
+      (item) => labelOf(item) === "timeout:",
+    ),
+  );
+  const inheritedSwap = await valuesAt('<div hx-swap:inherited="innerHTML ">', "innerHTML ");
+  assert.ok(inheritedSwap.some((item) => labelOf(item) === "focusScroll:"));
+  assert.equal(
+    inheritedSwap.some((item) => labelOf(item) === "focus-scroll:"),
+    false,
+  );
+  assert.equal(
+    inheritedSwap.some((item) => labelOf(item) === "outerHTML"),
+    false,
+  );
   const v4Get = v4Items.items.find((item) => labelOf(item) === "hx-get");
   const v4Status = v4Items.items.find((item) => labelOf(item) === "hx-status:<status>");
   assert.match(
@@ -437,7 +484,7 @@ export async function run(): Promise<void> {
     vscode.Uri.joinPath(vscode.Uri.file(extension.extensionPath), "snippets", "django-htmx.json"),
   );
   const snippets = JSON.parse(new TextDecoder().decode(snippetBytes)) as Record<string, RuntimeSnippet>;
-  assert.equal(Object.keys(snippets).length, 22);
+  assert.equal(Object.keys(snippets).length, 25);
   const snippetsByPrefix = new Map(Object.values(snippets).map((snippet) => [snippet.prefix, snippet]));
   assert.match(snippetsByPrefix.get("htmx-post")?.body.join("\n") ?? "", /\{% csrf_token %\}/);
   assert.match(snippetsByPrefix.get("partialdef")?.body.join("\n") ?? "", /\{% partialdef /);

@@ -64,6 +64,8 @@ export function analyzeDocument(
     }
 
     const entry = resolved.attribute;
+    // Colon-bearing values are modifier/config syntax (e.g. HTMX 4 `hx-boost="swap:... target:..."`),
+    // which is open-ended and shouldn't be checked against a closed value list.
     if (
       entry?.strictValues === true &&
       entry.values !== undefined &&
@@ -71,6 +73,7 @@ export function analyzeDocument(
       attribute.value !== undefined &&
       attribute.valueClosed === true &&
       attribute.value.trim() !== "" &&
+      !attribute.value.includes(":") &&
       !containsTemplateExpression(attribute.value)
     ) {
       const allowed = new Set(entry.values.map((value) => value.name.toLowerCase()));

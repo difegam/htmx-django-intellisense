@@ -22,6 +22,7 @@ matching view and response examples.
 | `htmx-file-upload` | Curated recipe | CSRF-safe multipart file upload with a status target |
 | `htmx-bulk-actions` | Curated recipe | CSRF-safe bulk action form for Django objects |
 | `htmx-dependent-dropdown` | Curated recipe | Django select that loads options for a dependent field |
+| `htmx-status-form` | Curated recipe | HTMX 4 Django form with status-specific validation handling |
 | `htmx-infinite` | Common | Load the next Django page when revealed |
 | `htmx-poll` | Curated recipe | Poll a Django view until work is complete |
 | `htmx-lazy` | Common | Load a Django fragment when its placeholder appears |
@@ -31,8 +32,10 @@ matching view and response examples.
 | `htmx-table-row` | Curated recipe | Replace a Django table row with server-rendered editing controls |
 | `htmx-dialog` | Curated recipe | Load a script-free non-modal dialog from a Django view |
 | `htmx-tabs` | Curated recipe | Replace server-rendered tabs and selected state |
+| `htmx-morph` | Curated recipe | HTMX 4 state-preserving refresh |
 | `htmx-oob-swap` | Common | Update a second region from a Django HTMX response |
 | `htmx-toast` | Curated recipe | Append an accessible notification from an HTMX response |
+| `htmx-partial-response` | Curated recipe | HTMX 4 response fragment with explicit target and swap |
 | `partialdef` | Django 6 | Define a Django 6 template partial |
 | `partialdef-inline` | Django 6 | Define and render an inline Django 6 template partial |
 | `partial` | Django 6 | Render a same-file Django 6 template partial |
@@ -195,6 +198,26 @@ Django select that loads options for a dependent field.
 
 **Endpoint or context:** The options view reads the selected parent value and returns option elements for the dependent select.
 
+### `htmx-status-form`
+
+HTMX 4 Django form with status-specific validation handling.
+
+**Classification:** Curated recipe
+
+```django
+<form method="post" action="{% url 'view-name' %}"
+      hx-post="{% url 'view-name' %}" hx-target="#result"
+      hx-status:422="swap:innerHTML target:#errors" hx-status:5xx="swap:none">
+  {% csrf_token %}
+  <div id="errors" role="alert"></div>
+  <!-- Add content here. -->
+  <button type="submit">Save</button>
+</form>
+<div id="result"></div>
+```
+
+**Endpoint or context:** Requires HTMX 4. Return validation HTML with status 422, and success HTML for the result container. Server error responses do not swap.
+
 ## Loading and navigation
 
 ### `htmx-infinite`
@@ -298,9 +321,9 @@ Replace a Django object summary with an edit form.
 **Classification:** Common
 
 ```django
-<article hx-target="this" hx-swap="outerHTML">
+<article>
   <h2>{{ object }}</h2>
-  <button type="button" hx-get="{% url 'edit-view' object.pk %}">Edit</button>
+  <button type="button" hx-target="closest article" hx-swap="outerHTML" hx-get="{% url 'edit-view' object.pk %}">Edit</button>
 </article>
 ```
 
@@ -313,9 +336,9 @@ Replace a Django table row with server-rendered editing controls.
 **Classification:** Curated recipe
 
 ```django
-<tr id="item-{{ object.pk }}" hx-target="this" hx-swap="outerHTML">
+<tr id="item-{{ object.pk }}">
   <th scope="row">{{ object }}</th>
-  <td><button type="button" hx-get="{% url 'edit-view' object.pk %}">Edit</button></td>
+  <td><button type="button" hx-target="closest tr" hx-swap="outerHTML" hx-get="{% url 'edit-view' object.pk %}">Edit</button></td>
 </tr>
 ```
 
@@ -365,6 +388,21 @@ Replace server-rendered tabs and selected state.
 
 **Endpoint or context:** The tabs view returns the complete section with updated tablist, aria-selected state, and panel content.
 
+### `htmx-morph`
+
+HTMX 4 state-preserving refresh.
+
+**Classification:** Curated recipe
+
+```django
+<section id="live-region" hx-get="{% url 'fragment-view' %}"
+         hx-trigger="every 5s" hx-swap="innerMorph">
+  <!-- Add content here. -->
+</section>
+```
+
+**Endpoint or context:** Requires HTMX 4. The view returns the region contents. Use stable element IDs to help morphing preserve focus and state.
+
 ## Server responses
 
 ### `htmx-oob-swap`
@@ -394,6 +432,20 @@ Append an accessible notification from an HTMX response.
 ```
 
 **Endpoint or context:** Return this fragment with a primary response to append its status message to the existing notifications region.
+
+### `htmx-partial-response`
+
+HTMX 4 response fragment with explicit target and swap.
+
+**Classification:** Curated recipe
+
+```django
+<hx-partial hx-target="#notifications" hx-swap="append">
+  <!-- Add content here. -->
+</hx-partial>
+```
+
+**Endpoint or context:** Requires HTMX 4. Return one or more hx-partial elements to update multiple targets. This is an HTMX response element, separate from Django partialdef template tags.
 
 ## Django partials
 

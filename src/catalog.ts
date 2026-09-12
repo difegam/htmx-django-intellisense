@@ -96,20 +96,23 @@ export class CatalogIndex {
           categories: entry.categories,
           examples: entry.examples,
           pattern: entry,
+          attribute: entry.name === "hx-status:<status>" ? this.attributes.get("hx-status") : undefined,
         };
       }
     }
 
-    const separator = canonicalName.lastIndexOf(":");
-    if (separator > 2) {
-      const baseName = canonicalName.slice(0, separator);
-      const modifier = canonicalName.slice(separator + 1);
-      const base = this.attributes.get(baseName);
-      if (base?.modifiers?.includes(modifier) === true) {
+    const suffix = /:(inherited(?::append)?|append)$/.exec(canonicalName);
+    if (suffix !== null) {
+      const baseName = canonicalName.slice(0, suffix.index);
+      const modifier = suffix[1]!;
+      const base = this.resolve(baseName);
+      if (base?.modifier === undefined && base?.attribute?.modifiers?.includes(modifier) === true) {
         return {
-          ...this.fromAttribute(rawName, baseName, base),
+          ...base,
+          displayName: rawName,
           canonicalName,
           modifier,
+          versions: ["4"],
         };
       }
     }

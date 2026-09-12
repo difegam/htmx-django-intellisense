@@ -104,3 +104,31 @@ test("Django partial duplicates and unknown references warn", () => {
     ["duplicate-partial", "unknown-partial"],
   );
 });
+
+test("HTMX 4 QUERY and explicit inheritance are validated by version", () => {
+  const text =
+    '<form hx-action="/search" hx-method="QUERY" hx-config:append="timeout:5s" hx-target:inherited="#results"></form>';
+  assert.deepEqual(analyzeDocument(text, "html", catalog, "4"), []);
+  assert.equal(
+    analyzeDocument('<div hx-target:inherited="#results"></div>', "html", catalog, "2")[0]?.code,
+    "version-mismatch",
+  );
+});
+
+test("hx-boost config strings bypass strict validation while closed booleans stay checked", () => {
+  assert.deepEqual(
+    analyzeDocument(
+      `<a href="/modal" hx-boost="swap:outerSync select:#main target:#main"></a>`,
+      "html",
+      catalog,
+      "4",
+    ),
+    [],
+  );
+  assert.deepEqual(analyzeDocument(`<a href="/x" hx-boost="true"></a>`, "html", catalog, "4"), []);
+  assert.deepEqual(analyzeDocument(`<a href="/x" hx-boost="false"></a>`, "html", catalog, "2"), []);
+  assert.equal(
+    analyzeDocument(`<a href="/x" hx-boost="bogus"></a>`, "html", catalog, "4")[0]?.code,
+    "invalid-value",
+  );
+});

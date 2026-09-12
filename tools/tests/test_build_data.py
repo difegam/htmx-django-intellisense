@@ -28,7 +28,7 @@ def _archive(files: dict[str, str]) -> bytes:
 def test_default_versions_are_pinned() -> None:
     module = _load_build_data_module()
     assert module.DEFAULT_HTMX_V2_VERSION == "2.0.10"
-    assert module.DEFAULT_HTMX_V4_VERSION == "4.0.0-beta6"
+    assert module.DEFAULT_HTMX_V4_VERSION == "4.0.0"
 
 
 def test_fetch_zip_content_wraps_url_errors() -> None:
@@ -306,3 +306,49 @@ export const ATTRIBUTE_GROUPS = [
     first = json.dumps(module.build_catalog("2.0.10", "4.0.0-beta5"), indent=2)
     second = json.dumps(module.build_catalog("2.0.10", "4.0.0-beta5"), indent=2)
     assert first == second
+
+
+def test_release_attribute_categories_use_markdown_index() -> None:
+    payload = _archive(
+        {
+            "htmx/www/src/content/reference/01-attributes/index.md": (
+                "### Requests\n\n- [hx-query](/reference/attributes/hx-query) - QUERY\n"
+                "### Advanced\n\n- [hx-config](/reference/attributes/hx-config) - Config\n"
+            ),
+        }
+    )
+    assert module.extract_attribute_categories(payload, "4") == {
+        "hx-query": "Requests",
+        "hx-config": "Advanced",
+    }
+
+
+def test_release_values_and_examples() -> None:
+    assert "query" in {value["name"] for value in module.ATTRIBUTE_VALUES["hx-method"]["values"]}
+    assert 'hx-action="/items"' in module.CURATED_EXAMPLES["hx-method"]
+    swap = {value["name"]: value for value in module.ATTRIBUTE_VALUES["hx-swap"]["values"]}
+    for name in (
+        "outerSync",
+        "upsert",
+        "focusScroll:",
+        "showTarget:",
+        "scrollTarget:",
+        "target:",
+        "strip:",
+        "swapEmpty:",
+    ):
+        assert swap[name]["versions"] == ["4"]
+    assert swap["focus-scroll:"]["versions"] == ["2"]
+    assert "hx-config" in module.APPENDABLE_V4_ATTRIBUTES
+    assert {v["name"] for v in module.ATTRIBUTE_VALUES["hx-status"]["values"]} == {
+        "swap:",
+        "target:",
+        "select:",
+        "push:",
+        "replace:",
+        "transition:",
+    }
+    assert "upsert" in module.ATTRIBUTE_VALUES["hx-status"]["values"][0]["insertText"]
+    swap_oob = {value["name"]: value for value in module.ATTRIBUTE_VALUES["hx-swap-oob"]["values"]}
+    assert swap_oob["upsert"]["versions"] == ["4"]
+    assert swap_oob["upsert"]["insertText"] == "upsert${1::selector}"

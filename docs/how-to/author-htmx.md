@@ -52,7 +52,8 @@ The catalog stores only `hx-*`; aliases have identical completion, hover, and di
 ## Use dynamic syntax
 
 ```html
-<form hx-on::after-request="this.reset()" hx-status:422="target:#errors" hx-target-4*="#errors">
+<!-- HTMX 4 -->
+<form hx-on::after:request="this.reset()" hx-status:422="target:#errors">
 </form>
 ```
 
