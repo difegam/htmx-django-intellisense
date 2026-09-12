@@ -484,7 +484,7 @@ export async function run(): Promise<void> {
     vscode.Uri.joinPath(vscode.Uri.file(extension.extensionPath), "snippets", "django-htmx.json"),
   );
   const snippets = JSON.parse(new TextDecoder().decode(snippetBytes)) as Record<string, RuntimeSnippet>;
-  assert.equal(Object.keys(snippets).length, 25);
+  assert.equal(Object.keys(snippets).length, 26);
   const snippetsByPrefix = new Map(Object.values(snippets).map((snippet) => [snippet.prefix, snippet]));
   assert.match(snippetsByPrefix.get("htmx-post")?.body.join("\n") ?? "", /\{% csrf_token %\}/);
   assert.match(snippetsByPrefix.get("partialdef")?.body.join("\n") ?? "", /\{% partialdef /);

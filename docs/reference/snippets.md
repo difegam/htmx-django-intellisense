@@ -31,6 +31,7 @@ matching view and response examples.
 | `htmx-click-to-edit` | Common | Replace a Django object summary with an edit form |
 | `htmx-table-row` | Curated recipe | Replace a Django table row with server-rendered editing controls |
 | `htmx-dialog` | Curated recipe | Load a script-free non-modal dialog from a Django view |
+| `htmx-modal` | Curated recipe | Load a Django view into a fixed CSS-only modal overlay |
 | `htmx-tabs` | Curated recipe | Replace server-rendered tabs and selected state |
 | `htmx-morph` | Curated recipe | HTMX 4 state-preserving refresh |
 | `htmx-oob-swap` | Common | Update a second region from a Django HTMX response |
@@ -361,6 +362,23 @@ Load a script-free non-modal dialog from a Django view.
 ```
 
 **Endpoint or context:** The view returns a dialog with the same id, the open attribute, a labelled title, and a native method="dialog" close form; it is non-modal without showModal().
+
+### `htmx-modal`
+
+Load a Django view into a fixed CSS-only modal overlay.
+
+**Classification:** Curated recipe
+
+```django
+<button type="button" hx-get="{% url 'modal-view' %}"
+        hx-target="#modal" hx-swap="innerHTML"
+        aria-haspopup="dialog" aria-controls="modal">
+  Open modal
+</button>
+<div id="modal" class="modal-container" role="dialog" aria-modal="true" aria-labelledby="modal-title"></div>
+```
+
+**Endpoint or context:** The modal view returns the overlay markup with underlay/close controls that target the same container and swap it empty to close; no JavaScript is required.
 
 ### `htmx-tabs`
 

@@ -299,6 +299,22 @@
     "usage": "The view returns a dialog with the same id, the open attribute, a labelled title, and a native method=\"dialog\" close form; it is non-modal without showModal()."
   },
   {
+    "name": "HTMX Modal",
+    "prefix": "htmx-modal",
+    "category": "Editing and UI",
+    "classification": "curated",
+    "description": "Load a Django view into a fixed CSS-only modal overlay",
+    "body": [
+      "<button type=\"button\" hx-get=\"{% url '${1:modal-view}' %}\"",
+      "        hx-target=\"#${2:modal}\" hx-swap=\"innerHTML\"",
+      "        aria-haspopup=\"dialog\" aria-controls=\"${2:modal}\">",
+      "  ${3:Open modal}",
+      "</button>",
+      "<div id=\"${2:modal}\" class=\"modal-container\" role=\"dialog\" aria-modal=\"true\" aria-labelledby=\"${2:modal}-title\"></div>"
+    ],
+    "usage": "The modal view returns the overlay markup with underlay/close controls that target the same container and swap it empty to close; no JavaScript is required."
+  },
+  {
     "name": "HTMX Server-driven Tabs",
     "prefix": "htmx-tabs",
     "category": "Editing and UI",

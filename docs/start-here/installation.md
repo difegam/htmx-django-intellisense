@@ -39,6 +39,17 @@ VS Code should offer HTMX attribute names. Select `hx-get`; the completion inser
 
     Contributors can install a locally packaged file with `code --install-extension htmx-django-intellisense-*.vsix --force` after running `npm run package`.
 
+!!! warning "Using VS Code profiles"
+
+    If you use [VS Code profiles](https://code.visualstudio.com/docs/editor/profiles), the CLI installs into
+    the **default** profile's extension pool by default, not the profile bound to your current workspace. If
+    the extension doesn't appear in the Extensions view after installing, check which profile the workspace
+    uses (Status Bar → profile name, or **Profiles** menu) and reinstall targeting it explicitly:
+
+    ```bash
+    code --install-extension htmx-django-intellisense-*.vsix --profile "<your-profile-name>" --force
+    ```
+
 ## Next step
 
 Follow [First Template](first-template.md) for a Django URL-backed request and a same-file partial.

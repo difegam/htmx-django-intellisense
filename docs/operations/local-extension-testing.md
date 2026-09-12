@@ -82,6 +82,10 @@ npx vsce ls --tree
 code --install-extension htmx-django-intellisense-*.vsix --force
 ```
 
+If you use [VS Code profiles](https://code.visualstudio.com/docs/editor/profiles), this installs into the
+**default** profile's extension pool, not necessarily the profile your workspace is bound to. Check which
+profile is active (Status Bar → profile name) and, if it isn't "Default", reinstall with `--profile "<your-profile-name>"` so the extension shows up in that window's Extensions view.
+
 Open the `examples/` workspace (or any HTML/Django template project) and run through this smoke checklist:
 
 1. Open an `HTML` file and type `<div hx`. Confirm `hx-get`, `hx-post`, and other attributes appear.

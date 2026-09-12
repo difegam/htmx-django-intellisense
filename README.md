@@ -12,7 +12,7 @@ diagnostics, quick fixes, snippets, and Django 6 template partial support.
     <img src="https://img.shields.io/badge/license-Apache%202.0-0C4B33" alt="License">
   </a>
   <a href="https://deepwiki.com/difegam/htmx-django-intellisense">
-      <img src="https://deepwiki.com/badge.svg" alt="DeepWiki">
+      <img src="https://img.shields.io/badge/DeepWiki-View-0C4B33.png" alt="DeepWiki">
   </a>
   <br>
   <a href="https://marketplace.visualstudio.com/items?itemName=difegam.htmx-django-intellisense">
@@ -44,6 +44,10 @@ npm install
 npm run package
 code --install-extension htmx-django-intellisense-*.vsix --force
 ```
+
+If you use [VS Code profiles](https://code.visualstudio.com/docs/editor/profiles), this installs into the
+default profile's extension pool. If the extension doesn't show up in the Extensions view, check which
+profile your workspace uses and reinstall with `--profile "<your-profile-name>"`.
 
 Django template support requires the [Django extension](https://marketplace.visualstudio.com/items?itemName=batisteo.vscode-django), which VS Code installs as an extension dependency. Open an `html` or `django-html` template and type `hx-` to verify activation.
 
