@@ -127,7 +127,7 @@
     "eslint": "^10.9.1",
     "knip": "^6.32.3",
     "prettier": "^3.7.1",
-    "typescript": "^7.0.2",
+    "typescript": "^5.9.3",
     "ovsx": "1.1.1"
   },
   "extensionDependencies": [
