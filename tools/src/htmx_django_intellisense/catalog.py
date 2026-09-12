@@ -18,7 +18,7 @@ from htmx_django_intellisense.models import Catalog
 
 LOGGER = logging.getLogger(__name__)
 DEFAULT_HTMX_V2_VERSION = "2.0.10"
-DEFAULT_HTMX_V4_VERSION = "4.0.0-beta6"
+DEFAULT_HTMX_V4_VERSION = "4.0.0"
 DEFAULT_OUTPUT_FILE = Path("htmx.catalog.json")
 REMOVED_IN_HTMX_V2 = {"hx-sse", "hx-ws"}
 
@@ -89,7 +89,7 @@ ATTRIBUTE_VALUES: dict[str, dict[str, Any]] = {
         "strict": True,
         "values": [
             _value(method, f"Issue a {method.upper()} request", versions=["4"])
-            for method in ("get", "post", "put", "patch", "delete")
+            for method in ("get", "post", "put", "patch", "delete", "query")
         ],
     },
     "hx-swap": {
@@ -136,7 +136,7 @@ ATTRIBUTE_VALUES: dict[str, dict[str, Any]] = {
             _value(
                 "show:",
                 "Show the target after swapping",
-                insert_text="show:${1|top,bottom|}",
+                insert_text="show:${1|top,bottom,none|}",
                 kind="modifier",
             ),
             _value(
@@ -149,9 +149,109 @@ ATTRIBUTE_VALUES: dict[str, dict[str, Any]] = {
                 "focus-scroll:",
                 "Control scrolling to restored focus",
                 insert_text="focus-scroll:${1|true,false|}",
+                versions=["2"],
                 kind="modifier",
             ),
         ]
+    },
+    "hx-config": {
+        "values": [
+            _value(
+                "timeout:",
+                "Request timeout (milliseconds or interval)",
+                insert_text="timeout:${1:5s}",
+                versions=["4"],
+                kind="modifier",
+            ),
+            _value(
+                "credentials:",
+                "Fetch credentials mode",
+                insert_text="credentials:${1|same-origin,include,omit|}",
+                versions=["4"],
+                kind="modifier",
+            ),
+            _value(
+                "cache:",
+                "Fetch cache mode",
+                insert_text="cache:${1|default,no-store,reload,no-cache,force-cache,only-if-cached|}",
+                versions=["4"],
+                kind="modifier",
+            ),
+            _value(
+                "redirect:",
+                "Fetch redirect mode",
+                insert_text="redirect:${1|follow,error,manual|}",
+                versions=["4"],
+                kind="modifier",
+            ),
+            _value(
+                "referrer:",
+                "Request referrer",
+                insert_text="referrer:${1:no-referrer}",
+                versions=["4"],
+                kind="modifier",
+            ),
+            _value(
+                "integrity:",
+                "Subresource integrity value",
+                insert_text="integrity:${1:sha384-...}",
+                versions=["4"],
+                kind="modifier",
+            ),
+            _value(
+                "validate:",
+                "Validate before submitting",
+                insert_text="validate:${1|true,false|}",
+                versions=["4"],
+                kind="modifier",
+            ),
+        ],
+    },
+    "hx-status": {
+        "values": [
+            _value(
+                "swap:",
+                "Swap style for this response status",
+                insert_text="swap:${1|innerHTML,outerHTML,innerMorph,outerMorph,outerSync,textContent,before,after,prepend,append,delete,none|}",
+                versions=["4"],
+                kind="modifier",
+            ),
+            _value(
+                "target:",
+                "Target for this response status",
+                insert_text="target:${1:#errors}",
+                versions=["4"],
+                kind="modifier",
+            ),
+            _value(
+                "select:",
+                "Select content from this response",
+                insert_text="select:${1:#validation-errors}",
+                versions=["4"],
+                kind="modifier",
+            ),
+            _value(
+                "push:",
+                "Push history URL (boolean or URL)",
+                insert_text="push:${1:false}",
+                versions=["4"],
+                kind="modifier",
+            ),
+            _value(
+                "replace:",
+                "Replace history URL (boolean or URL)",
+                insert_text="replace:${1:false}",
+                versions=["4"],
+                kind="modifier",
+            ),
+            _value(
+                "transition:",
+                "Use a view transition",
+                insert_text="transition:${1|true,false|}",
+                versions=["4"],
+                kind="modifier",
+            ),
+        ],
     },
     "hx-target": {
         "values": [
@@ -212,6 +312,7 @@ ATTRIBUTE_VALUES: dict[str, dict[str, Any]] = {
                 "queue:",
                 "Choose how events queue during a request",
                 insert_text="queue:${1|first,last,all,none|}",
+                versions=["2"],
                 kind="modifier",
             ),
         ]
@@ -447,13 +548,92 @@ ATTRIBUTE_VALUES: dict[str, dict[str, Any]] = {
     },
 }
 
+# Keep HTMX 4 additions versioned so HTMX 2 completion stays accurate.
+ATTRIBUTE_VALUES["hx-swap"]["values"].extend(
+    [
+        _value(
+            "outerSync", "Morph attributes and replace children", versions=["4"], kind="strategy"
+        ),
+        *[
+            _value(
+                f"{name}:",
+                description,
+                insert_text=f"{name}:${{1|true,false|}}",
+                versions=["4"],
+                kind="modifier",
+            )
+            for name, description in (
+                ("focusScroll", "Scroll to restored focus"),
+                ("strip", "Remove the response outer element"),
+                ("swapEmpty", "Swap even when main content is empty"),
+            )
+        ],
+        *[
+            _value(
+                f"{name}:",
+                description,
+                insert_text=f"{name}:${{1:#results}}",
+                versions=["4"],
+                kind="modifier",
+            )
+            for name, description in (
+                ("showTarget", "Element to show after swapping"),
+                ("scrollTarget", "Element to scroll after swapping"),
+                ("target", "Override the swap target"),
+            )
+        ],
+    ]
+)
+ATTRIBUTE_VALUES["hx-swap-oob"]["values"].append(
+    _value(
+        "outerSync",
+        "Morph attributes and replace children",
+        insert_text="outerSync${1::selector}",
+        versions=["4"],
+        kind="strategy",
+    )
+)
+ATTRIBUTE_VALUES["hx-trigger"]["values"].extend(
+    [
+        *[
+            _value(name, description, versions=["4"], kind="modifier")
+            for name, description in (
+                ("prevent", "Prevent the default event action"),
+                ("stop", "Stop event propagation"),
+                ("halt", "Prevent the default action and stop propagation"),
+                ("capture", "Listen during the capture phase"),
+                ("passive", "Listen without preventing the default action"),
+            )
+        ],
+        _value(
+            "root:",
+            "Intersection observer root",
+            insert_text="root:${1:#scroll-container}",
+            kind="modifier",
+        ),
+        _value(
+            "threshold:",
+            "Intersection threshold",
+            insert_text="threshold:${1:0.5}",
+            kind="modifier",
+        ),
+        _value(
+            "rootMargin:",
+            "Intersection observer margin",
+            insert_text="rootMargin:${1:100px}",
+            versions=["4"],
+            kind="modifier",
+        ),
+    ]
+)
+
 CURATED_EXAMPLES: dict[str, str] = {
     "hx-get": '<button hx-get="/items" hx-target="#results">Load</button>',
     "hx-post": '<form hx-post="/items" hx-target="#results">\n  <button>Save</button>\n</form>',
     "hx-put": '<button hx-put="/items/42" hx-target="#item-42">Update</button>',
     "hx-patch": '<button hx-patch="/items/42" hx-target="#item-42">Patch</button>',
     "hx-delete": '<button hx-delete="/items/42" hx-confirm="Delete this item?">Delete</button>',
-    "hx-method": '<button hx-method="post" hx-url="/items">Save</button>',
+    "hx-method": '<button hx-method="post" hx-action="/items">Save</button>',
     "hx-boost": '<nav hx-boost="true"><a href="/account">Account</a></nav>',
     "hx-target": '<button hx-get="/items" hx-target="closest section">Refresh</button>',
     "hx-swap": '<section hx-get="/items" hx-swap="innerHTML swap:300ms"></section>',
@@ -465,7 +645,7 @@ CURATED_EXAMPLES: dict[str, str] = {
     "hx-swap-oob": '<aside id="notifications" hx-swap-oob="beforeend"></aside>',
 }
 
-APPENDABLE_V4_ATTRIBUTES = {"hx-headers", "hx-include", "hx-indicator", "hx-vals"}
+APPENDABLE_V4_ATTRIBUTES = {"hx-headers", "hx-include", "hx-indicator", "hx-vals", "hx-config"}
 DEPRECATED: dict[str, str] = {
     "hx-vars": "Deprecated in HTMX 2; use hx-vals instead.",
 }
@@ -593,6 +773,31 @@ def extract_attribute_categories(zip_bytes: bytes, major: str) -> dict[str, str]
     suffix = "/www/content/reference.md" if major == "2" else "/www/src/content/reference/index.mdx"
     try:
         with zipfile.ZipFile(BytesIO(zip_bytes)) as zip_fd:
+            release_index = next(
+                (
+                    name
+                    for name in zip_fd.namelist()
+                    if name.endswith("/www/src/content/reference/01-attributes/index.md")
+                ),
+                None,
+            )
+            if major == "4" and release_index is not None:
+                source = zip_fd.read(release_index).decode()
+                categories = {}
+                for group in re.finditer(
+                    r"^### (?P<label>[^\n]+)\n(?P<body>.*?)(?=^### |\Z)",
+                    source,
+                    re.MULTILINE | re.DOTALL,
+                ):
+                    for name in re.findall(
+                        r"^- \[(hx-[^]]+)\]\(/reference/attributes/",
+                        group.group("body"),
+                        re.MULTILINE,
+                    ):
+                        categories[name] = group.group("label").strip()
+                if not categories:
+                    raise RuntimeError("no HTMX 4 attribute categories found")
+                return categories
             path = next((name for name in zip_fd.namelist() if name.endswith(suffix)), None)
             if path is None:
                 raise RuntimeError(f"missing HTMX {major} attribute reference source ({suffix})")
@@ -706,14 +911,24 @@ def build_catalog(v2_version: str, v4_version: str) -> dict[str, Any]:
             entry["values"] = value_data["values"]
             if value_data.get("strict"):
                 entry["strictValues"] = True
-        if "4" in entry["versions"]:
+        if "4" in entry["versions"] and name not in {"hx-morph-skip", "hx-morph-skip-children"}:
             entry["modifiers"] = ["inherited"]
             if name in APPENDABLE_V4_ATTRIBUTES:
-                entry["modifiers"].append("append")
+                entry["modifiers"].extend(["append", "inherited:append"])
+        if name == "hx-disable":
+            entry["description"] = (
+                "HTMX 2: disable HTMX processing. HTMX 4: disable selected elements during a request (formerly hx-disabled-elt); use hx-ignore to disable processing."
+            )
+        if name in {"hx-preload", "hx-pending"}:
+            entry["description"] += " Requires the corresponding HTMX 4 extension."
         if name in DEPRECATED:
             entry["deprecated"] = DEPRECATED[name]
         if name in CURATED_EXAMPLES:
             entry["examples"] = dict.fromkeys(entry["versions"], CURATED_EXAMPLES[name])
+            if name == "hx-boost" and "4" in entry["versions"]:
+                entry["examples"]["4"] = (
+                    '<nav hx-boost:inherited="true"><a href="/account">Account</a></nav>'
+                )
         elif not entry["examples"]:
             del entry["examples"]
 

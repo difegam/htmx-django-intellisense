@@ -22,7 +22,7 @@ Check `htmxDjango.version`. `compatible` accepts the HTMX 2/4 union without vers
 
 ## Catalog regeneration fails
 
-Catalog generation downloads pinned HTMX release archives. Check network access and that `v2.0.10` and `v4.0.0-beta6` remain available, then run:
+Catalog generation downloads pinned HTMX release archives. Check network access and that `v2.0.10` and `v4.0.0` remain available, then run:
 
 ```bash
 npm run build-data

@@ -75,7 +75,7 @@ def test_unbundled_build_output_is_excluded_from_vsix() -> None:
 def test_catalog_shape_and_version_union() -> None:
     catalog = _read_json(ROOT / "htmx.catalog.json")
     assert catalog["schemaVersion"] == 2
-    assert catalog["generatedFrom"] == {"htmx2": "2.0.10", "htmx4": "4.0.0-beta6"}
+    assert catalog["generatedFrom"] == {"htmx2": "2.0.10", "htmx4": "4.0.0"}
     attributes = {entry["name"]: entry for entry in catalog["attributes"]}
     assert attributes["hx-get"]["versions"] == ["2", "4"]
     assert attributes["hx-get"]["categories"] == {"2": "Core", "4": "Requests"}

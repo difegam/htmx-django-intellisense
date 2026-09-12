@@ -115,6 +115,21 @@
       "<select id=\"${5:dependent-select}\" name=\"${7:option}\"></select>"
     ]
   },
+  "HTMX 4 validation response": {
+    "prefix": "htmx-status-form",
+    "description": "HTMX 4 Django form with status-specific validation handling",
+    "body": [
+      "<form method=\"post\" action=\"{% url '${1:view-name}' %}\"",
+      "      hx-post=\"{% url '${1:view-name}' %}\" hx-target=\"#${2:result}\"",
+      "      hx-status:422=\"swap:innerHTML target:#${3:errors}\" hx-status:5xx=\"swap:none\">",
+      "  {% csrf_token %}",
+      "  <div id=\"${3:errors}\" role=\"alert\"></div>",
+      "  $0",
+      "  <button type=\"submit\">${4:Save}</button>",
+      "</form>",
+      "<div id=\"${2:result}\"></div>"
+    ]
+  },
   "HTMX Infinite Scroll": {
     "prefix": "htmx-infinite",
     "description": "Load the next Django page when revealed",
@@ -186,9 +201,9 @@
     "prefix": "htmx-click-to-edit",
     "description": "Replace a Django object summary with an edit form",
     "body": [
-      "<article hx-target=\"this\" hx-swap=\"outerHTML\">",
+      "<article>",
       "  <h2>{{ object }}</h2>",
-      "  <button type=\"button\" hx-get=\"{% url '${1:edit-view}' ${2:object.pk} %}\">${3:Edit}</button>",
+      "  <button type=\"button\" hx-target=\"closest article\" hx-swap=\"outerHTML\" hx-get=\"{% url '${1:edit-view}' ${2:object.pk} %}\">${3:Edit}</button>",
       "</article>"
     ]
   },
@@ -196,9 +211,9 @@
     "prefix": "htmx-table-row",
     "description": "Replace a Django table row with server-rendered editing controls",
     "body": [
-      "<tr id=\"${1:item}-{{ object.pk }}\" hx-target=\"this\" hx-swap=\"outerHTML\">",
+      "<tr id=\"${1:item}-{{ object.pk }}\">",
       "  <th scope=\"row\">{{ object }}</th>",
-      "  <td><button type=\"button\" hx-get=\"{% url '${2:edit-view}' ${3:object.pk} %}\">${4:Edit}</button></td>",
+      "  <td><button type=\"button\" hx-target=\"closest tr\" hx-swap=\"outerHTML\" hx-get=\"{% url '${2:edit-view}' ${3:object.pk} %}\">${4:Edit}</button></td>",
       "</tr>"
     ]
   },
@@ -236,6 +251,16 @@
       "</section>"
     ]
   },
+  "HTMX 4 morph refresh": {
+    "prefix": "htmx-morph",
+    "description": "HTMX 4 state-preserving refresh",
+    "body": [
+      "<section id=\"${1:live-region}\" hx-get=\"{% url '${2:fragment-view}' %}\"",
+      "         hx-trigger=\"every ${3:5s}\" hx-swap=\"innerMorph\">",
+      "  $0",
+      "</section>"
+    ]
+  },
   "HTMX Out-of-band Swap": {
     "prefix": "htmx-oob-swap",
     "description": "Update a second region from a Django HTMX response",
@@ -252,6 +277,15 @@
       "<div id=\"${1:notifications}\" hx-swap-oob=\"beforeend:#${1:notifications}\">",
       "  <p role=\"status\" aria-live=\"polite\">${2:Saved successfully.}</p>",
       "</div>"
+    ]
+  },
+  "HTMX 4 partial response": {
+    "prefix": "htmx-partial-response",
+    "description": "HTMX 4 response fragment with explicit target and swap",
+    "body": [
+      "<hx-partial hx-target=\"${1:#notifications}\" hx-swap=\"${2:append}\">",
+      "  $0",
+      "</hx-partial>"
     ]
   },
   "Django Partial Definition": {

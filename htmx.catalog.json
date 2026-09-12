@@ -2,7 +2,7 @@
   "schemaVersion": 2,
   "generatedFrom": {
     "htmx2": "2.0.10",
-    "htmx4": "4.0.0-beta6"
+    "htmx4": "4.0.0"
   },
   "attributes": [
     {
@@ -37,7 +37,7 @@
       },
       "examples": {
         "2": "<nav hx-boost=\"true\"><a href=\"/account\">Account</a></nav>",
-        "4": "<nav hx-boost=\"true\"><a href=\"/account\">Account</a></nav>"
+        "4": "<nav hx-boost:inherited=\"true\"><a href=\"/account\">Account</a></nav>"
       },
       "categories": {
         "2": "Additional",
@@ -75,8 +75,75 @@
       "categories": {
         "4": "Advanced"
       },
+      "values": [
+        {
+          "name": "timeout:",
+          "description": "Request timeout (milliseconds or interval)",
+          "kind": "modifier",
+          "insertText": "timeout:${1:5s}",
+          "versions": [
+            "4"
+          ]
+        },
+        {
+          "name": "credentials:",
+          "description": "Fetch credentials mode",
+          "kind": "modifier",
+          "insertText": "credentials:${1|same-origin,include,omit|}",
+          "versions": [
+            "4"
+          ]
+        },
+        {
+          "name": "cache:",
+          "description": "Fetch cache mode",
+          "kind": "modifier",
+          "insertText": "cache:${1|default,no-store,reload,no-cache,force-cache,only-if-cached|}",
+          "versions": [
+            "4"
+          ]
+        },
+        {
+          "name": "redirect:",
+          "description": "Fetch redirect mode",
+          "kind": "modifier",
+          "insertText": "redirect:${1|follow,error,manual|}",
+          "versions": [
+            "4"
+          ]
+        },
+        {
+          "name": "referrer:",
+          "description": "Request referrer",
+          "kind": "modifier",
+          "insertText": "referrer:${1:no-referrer}",
+          "versions": [
+            "4"
+          ]
+        },
+        {
+          "name": "integrity:",
+          "description": "Subresource integrity value",
+          "kind": "modifier",
+          "insertText": "integrity:${1:sha384-...}",
+          "versions": [
+            "4"
+          ]
+        },
+        {
+          "name": "validate:",
+          "description": "Validate before submitting",
+          "kind": "modifier",
+          "insertText": "validate:${1|true,false|}",
+          "versions": [
+            "4"
+          ]
+        }
+      ],
       "modifiers": [
-        "inherited"
+        "inherited",
+        "append",
+        "inherited:append"
       ]
     },
     {
@@ -127,7 +194,7 @@
     },
     {
       "name": "hx-disable",
-      "description": "Disables elements during request",
+      "description": "HTMX 2: disable HTMX processing. HTMX 4: disable selected elements during a request (formerly hx-disabled-elt); use hx-ignore to disable processing.",
       "versions": [
         "2",
         "4"
@@ -380,7 +447,8 @@
       },
       "modifiers": [
         "inherited",
-        "append"
+        "append",
+        "inherited:append"
       ]
     },
     {
@@ -462,7 +530,8 @@
       },
       "modifiers": [
         "inherited",
-        "append"
+        "append",
+        "inherited:append"
       ]
     },
     {
@@ -486,7 +555,8 @@
       },
       "modifiers": [
         "inherited",
-        "append"
+        "append",
+        "inherited:append"
       ]
     },
     {
@@ -515,7 +585,7 @@
         "4": "https://four.htmx.org/reference/attributes/hx-method"
       },
       "examples": {
-        "4": "<button hx-method=\"post\" hx-url=\"/items\">Save</button>"
+        "4": "<button hx-method=\"post\" hx-action=\"/items\">Save</button>"
       },
       "categories": {
         "4": "Advanced"
@@ -560,12 +630,52 @@
           "versions": [
             "4"
           ]
+        },
+        {
+          "name": "query",
+          "description": "Issue a QUERY request",
+          "kind": "value",
+          "versions": [
+            "4"
+          ]
         }
       ],
       "strictValues": true,
       "modifiers": [
         "inherited"
       ]
+    },
+    {
+      "name": "hx-morph-skip",
+      "description": "Freezes an element during a morph swap",
+      "versions": [
+        "4"
+      ],
+      "documentation": {
+        "4": "https://four.htmx.org/reference/attributes/hx-morph-skip"
+      },
+      "examples": {
+        "4": "<custom-widget hx-morph-skip>\n    <!-- htmx leaves this element and its children alone -->\n</custom-widget>"
+      },
+      "categories": {
+        "4": "Advanced"
+      }
+    },
+    {
+      "name": "hx-morph-skip-children",
+      "description": "Morphs an element's attributes but keeps its children",
+      "versions": [
+        "4"
+      ],
+      "documentation": {
+        "4": "https://four.htmx.org/reference/attributes/hx-morph-skip-children"
+      },
+      "examples": {
+        "4": "<div hx-morph-skip-children class=\"chart\">\n    <!-- htmx morphs the attributes above, but not this content -->\n</div>"
+      },
+      "categories": {
+        "4": "Advanced"
+      }
     },
     {
       "name": "hx-on",
@@ -585,25 +695,6 @@
       "categories": {
         "2": "Core",
         "4": "Scripting"
-      },
-      "modifiers": [
-        "inherited"
-      ]
-    },
-    {
-      "name": "hx-optimistic",
-      "description": "Shows optimistic content during request",
-      "versions": [
-        "4"
-      ],
-      "documentation": {
-        "4": "https://four.htmx.org/reference/attributes/hx-optimistic"
-      },
-      "examples": {
-        "4": "<div hx-post=\"/like\" hx-optimistic=\"#liked-state\">Like</div>"
-      },
-      "categories": {
-        "4": "Enhancements"
       },
       "modifiers": [
         "inherited"
@@ -667,6 +758,25 @@
       ]
     },
     {
+      "name": "hx-pending",
+      "description": "Shows custom content during requests Requires the corresponding HTMX 4 extension.",
+      "versions": [
+        "4"
+      ],
+      "documentation": {
+        "4": "https://four.htmx.org/reference/attributes/hx-pending"
+      },
+      "examples": {
+        "4": "<button hx-post=\"/action\" hx-pending=\"#loading-template\">Submit</button>"
+      },
+      "categories": {
+        "4": "Enhancements"
+      },
+      "modifiers": [
+        "inherited"
+      ]
+    },
+    {
       "name": "hx-post",
       "description": "Issues `POST` request to specified URL",
       "versions": [
@@ -691,7 +801,7 @@
     },
     {
       "name": "hx-preload",
-      "description": "Preloads content before user triggers request",
+      "description": "Preloads content before user triggers request Requires the corresponding HTMX 4 extension.",
       "versions": [
         "4"
       ],
@@ -787,6 +897,25 @@
       },
       "categories": {
         "2": "Additional",
+        "4": "Requests"
+      },
+      "modifiers": [
+        "inherited"
+      ]
+    },
+    {
+      "name": "hx-query",
+      "description": "Issues `QUERY` request to specified URL",
+      "versions": [
+        "4"
+      ],
+      "documentation": {
+        "4": "https://four.htmx.org/reference/attributes/hx-query"
+      },
+      "examples": {
+        "4": "<button hx-query=\"/search\">Search</button>"
+      },
+      "categories": {
         "4": "Requests"
       },
       "modifiers": [
@@ -893,6 +1022,62 @@
       "categories": {
         "4": "Advanced"
       },
+      "values": [
+        {
+          "name": "swap:",
+          "description": "Swap style for this response status",
+          "kind": "modifier",
+          "insertText": "swap:${1|innerHTML,outerHTML,innerMorph,outerMorph,outerSync,textContent,before,after,prepend,append,delete,none|}",
+          "versions": [
+            "4"
+          ]
+        },
+        {
+          "name": "target:",
+          "description": "Target for this response status",
+          "kind": "modifier",
+          "insertText": "target:${1:#errors}",
+          "versions": [
+            "4"
+          ]
+        },
+        {
+          "name": "select:",
+          "description": "Select content from this response",
+          "kind": "modifier",
+          "insertText": "select:${1:#validation-errors}",
+          "versions": [
+            "4"
+          ]
+        },
+        {
+          "name": "push:",
+          "description": "Push history URL (boolean or URL)",
+          "kind": "modifier",
+          "insertText": "push:${1:false}",
+          "versions": [
+            "4"
+          ]
+        },
+        {
+          "name": "replace:",
+          "description": "Replace history URL (boolean or URL)",
+          "kind": "modifier",
+          "insertText": "replace:${1:false}",
+          "versions": [
+            "4"
+          ]
+        },
+        {
+          "name": "transition:",
+          "description": "Use a view transition",
+          "kind": "modifier",
+          "insertText": "transition:${1|true,false|}",
+          "versions": [
+            "4"
+          ]
+        }
+      ],
       "modifiers": [
         "inherited"
       ]
@@ -1038,7 +1223,7 @@
           "name": "show:",
           "description": "Show the target after swapping",
           "kind": "modifier",
-          "insertText": "show:${1|top,bottom|}"
+          "insertText": "show:${1|top,bottom,none|}"
         },
         {
           "name": "ignoreTitle:",
@@ -1050,7 +1235,72 @@
           "name": "focus-scroll:",
           "description": "Control scrolling to restored focus",
           "kind": "modifier",
-          "insertText": "focus-scroll:${1|true,false|}"
+          "insertText": "focus-scroll:${1|true,false|}",
+          "versions": [
+            "2"
+          ]
+        },
+        {
+          "name": "outerSync",
+          "description": "Morph attributes and replace children",
+          "kind": "strategy",
+          "versions": [
+            "4"
+          ]
+        },
+        {
+          "name": "focusScroll:",
+          "description": "Scroll to restored focus",
+          "kind": "modifier",
+          "insertText": "focusScroll:${1|true,false|}",
+          "versions": [
+            "4"
+          ]
+        },
+        {
+          "name": "strip:",
+          "description": "Remove the response outer element",
+          "kind": "modifier",
+          "insertText": "strip:${1|true,false|}",
+          "versions": [
+            "4"
+          ]
+        },
+        {
+          "name": "swapEmpty:",
+          "description": "Swap even when main content is empty",
+          "kind": "modifier",
+          "insertText": "swapEmpty:${1|true,false|}",
+          "versions": [
+            "4"
+          ]
+        },
+        {
+          "name": "showTarget:",
+          "description": "Element to show after swapping",
+          "kind": "modifier",
+          "insertText": "showTarget:${1:#results}",
+          "versions": [
+            "4"
+          ]
+        },
+        {
+          "name": "scrollTarget:",
+          "description": "Element to scroll after swapping",
+          "kind": "modifier",
+          "insertText": "scrollTarget:${1:#results}",
+          "versions": [
+            "4"
+          ]
+        },
+        {
+          "name": "target:",
+          "description": "Override the swap target",
+          "kind": "modifier",
+          "insertText": "target:${1:#results}",
+          "versions": [
+            "4"
+          ]
         }
       ],
       "modifiers": [
@@ -1178,6 +1428,15 @@
           "description": "Alias for beforeend",
           "kind": "strategy",
           "insertText": "append${1::selector}",
+          "versions": [
+            "4"
+          ]
+        },
+        {
+          "name": "outerSync",
+          "description": "Morph attributes and replace children",
+          "kind": "strategy",
+          "insertText": "outerSync${1::selector}",
           "versions": [
             "4"
           ]
@@ -1440,7 +1699,71 @@
           "name": "queue:",
           "description": "Choose how events queue during a request",
           "kind": "modifier",
-          "insertText": "queue:${1|first,last,all,none|}"
+          "insertText": "queue:${1|first,last,all,none|}",
+          "versions": [
+            "2"
+          ]
+        },
+        {
+          "name": "prevent",
+          "description": "Prevent the default event action",
+          "kind": "modifier",
+          "versions": [
+            "4"
+          ]
+        },
+        {
+          "name": "stop",
+          "description": "Stop event propagation",
+          "kind": "modifier",
+          "versions": [
+            "4"
+          ]
+        },
+        {
+          "name": "halt",
+          "description": "Prevent the default action and stop propagation",
+          "kind": "modifier",
+          "versions": [
+            "4"
+          ]
+        },
+        {
+          "name": "capture",
+          "description": "Listen during the capture phase",
+          "kind": "modifier",
+          "versions": [
+            "4"
+          ]
+        },
+        {
+          "name": "passive",
+          "description": "Listen without preventing the default action",
+          "kind": "modifier",
+          "versions": [
+            "4"
+          ]
+        },
+        {
+          "name": "root:",
+          "description": "Intersection observer root",
+          "kind": "modifier",
+          "insertText": "root:${1:#scroll-container}"
+        },
+        {
+          "name": "threshold:",
+          "description": "Intersection threshold",
+          "kind": "modifier",
+          "insertText": "threshold:${1:0.5}"
+        },
+        {
+          "name": "rootMargin:",
+          "description": "Intersection observer margin",
+          "kind": "modifier",
+          "insertText": "rootMargin:${1:100px}",
+          "versions": [
+            "4"
+          ]
         }
       ],
       "modifiers": [
@@ -1490,7 +1813,8 @@
       },
       "modifiers": [
         "inherited",
-        "append"
+        "append",
+        "inherited:append"
       ]
     },
     {

@@ -39,6 +39,8 @@ const ATTRIBUTE_PRIORITIES = [
   "hx-put",
   "hx-patch",
   "hx-delete",
+  "hx-query",
+  "hx-action",
   "hx-method",
   "hx-target",
   "hx-swap",
@@ -397,11 +399,15 @@ function valueCompletionItems(
   const entry = resolved.attribute;
   const mode = versionMode(document);
   const beforeCursor = document.getText().slice(attribute.valueStart, offset);
+  const attributeName = entry.name;
+  if (attributeName === "hx-config" && beforeCursor.trimStart().startsWith("{")) {
+    return undefined;
+  }
   let values = valuesForMode(entry.values, mode);
   let start = attribute.valueStart;
   let used: string[] = [];
 
-  if (resolved.canonicalName === "hx-swap") {
+  if (attributeName === "hx-swap") {
     const tokens = beforeCursor.trim().split(/\s+/).filter(Boolean);
     const strategyChosen = values.some((value) => value.kind === "strategy" && value.name === tokens[0]);
     if (strategyChosen && (/\s$/.test(beforeCursor) || tokens.length > 1)) {
@@ -414,7 +420,7 @@ function valueCompletionItems(
       values = values.filter((value) => value.kind === "strategy");
       start += beforeCursor.search(/\S|$/);
     }
-  } else if (resolved.canonicalName === "hx-trigger") {
+  } else if (attributeName === "hx-trigger") {
     const clauseStart = beforeCursor.lastIndexOf(",") + 1;
     const clause = beforeCursor.slice(clauseStart);
     const tokens = clause.trim().split(/\s+/).filter(Boolean);
@@ -429,7 +435,14 @@ function valueCompletionItems(
       values = values.filter((value) => value.kind === "event");
       start = attribute.valueStart + clauseStart + clause.search(/\S|$/);
     }
-  } else if (resolved.canonicalName === "hx-ext") {
+  } else if (attributeName === "hx-config" || attributeName === "hx-status") {
+    const segment = beforeCursor.match(/\S*$/)?.[0] ?? "";
+    start = offset - segment.length;
+    used = beforeCursor
+      .slice(0, beforeCursor.length - segment.length)
+      .trim()
+      .split(/\s+/);
+  } else if (attributeName === "hx-ext") {
     const segmentStart = beforeCursor.lastIndexOf(",") + 1;
     const segment = beforeCursor.slice(segmentStart);
     start = attribute.valueStart + segmentStart + segment.search(/\S|$/);
@@ -438,14 +451,14 @@ function valueCompletionItems(
       .split(",")
       .map((value) => value.trim())
       .filter(Boolean);
-  } else if (resolved.canonicalName === "hx-disinherit") {
+  } else if (attributeName === "hx-disinherit") {
     values = [...values, ...catalog.disinheritCandidates(mode)];
     const segment = beforeCursor.split(/[\s,]/).at(-1) ?? "";
     start = offset - segment.length;
     used = beforeCursor.split(/[\s,]/).filter(Boolean);
   } else if (
     !entry.strictValues &&
-    !["hx-target", "hx-sync", "hx-params", "hx-swap-oob"].includes(resolved.canonicalName)
+    !["hx-target", "hx-sync", "hx-params", "hx-swap-oob"].includes(attributeName)
   ) {
     const segment = beforeCursor.split(/[\s,]/).at(-1) ?? "";
     start = offset - segment.length;
@@ -556,7 +569,7 @@ async function provideCompletions(
       ),
       dynamicCompletion(
         `${alias}hx-on::<event>`,
-        `${alias}hx-on::\${1:before-request}=\"$0\"`,
+        `${alias}hx-on::\${1:${mode === "compatible" ? "event" : mode === "2" ? "before-request" : "before:request"}}=\"$0\"`,
         "Handle an HTMX event inline",
         range,
         mode,
@@ -604,10 +617,16 @@ async function provideCompletions(
     }
   }
 
-  for (const entry of entries) {
+  for (const entry of mode === "2" ? [] : entries) {
     for (const modifier of entry.modifiers ?? []) {
       const spelling = `${alias}${entry.name}:${modifier}`;
-      const item = attributeCompletion(entry, spelling, range, !assignmentExists, mode);
+      const item = attributeCompletion(
+        { ...entry, versions: ["4"] },
+        spelling,
+        range,
+        !assignmentExists,
+        mode,
+      );
       item.sortText = `30-${spelling}`;
       items.push(item);
     }

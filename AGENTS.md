@@ -24,7 +24,7 @@ Run from repo root. `just` recipes wrap the same commands.
 
 ## Catalog regeneration (the non-obvious trap)
 
-`htmx.catalog.json` is committed and is the extension's offline data source — it is NOT generated at runtime. Pinned upstream HTMX versions: `2.0.10` and `4.0.0-beta6` (constants in `tools/src/htmx_django_intellisense/catalog.py`).
+`htmx.catalog.json` is committed and is the extension's offline data source — it is NOT generated at runtime. Pinned upstream HTMX versions: `2.0.10` and `4.0.0` (constants in `tools/src/htmx_django_intellisense/catalog.py`).
 
 Regenerate with `npm run build-data` (= `uv run --project tools htmx-tools build-data`). CI fails if `git diff --exit-code -- htmx.catalog.json` shows drift, so after changing `tools/src/htmx_django_intellisense/catalog.py` or its inputs, regenerate AND commit the catalog together.
 

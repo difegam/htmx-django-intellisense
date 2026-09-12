@@ -121,7 +121,7 @@ for every prefix and its generated output.
 
 ## Compatibility and settings
 
-The committed catalog covers HTMX `2.0.10` and `4.0.0-beta6`.
+The committed catalog covers HTMX `2.0.10` and `4.0.0`.
 `compatible` mode is the default and accepts their union. Choose `2` or `4`
 to surface cross-version syntax as hints.
 

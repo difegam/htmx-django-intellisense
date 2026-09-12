@@ -20,6 +20,7 @@ EXPECTED_PREFIXES = [
     "htmx-file-upload",
     "htmx-bulk-actions",
     "htmx-dependent-dropdown",
+    "htmx-status-form",
     "htmx-infinite",
     "htmx-poll",
     "htmx-lazy",
@@ -29,8 +30,10 @@ EXPECTED_PREFIXES = [
     "htmx-table-row",
     "htmx-dialog",
     "htmx-tabs",
+    "htmx-morph",
     "htmx-oob-swap",
     "htmx-toast",
+    "htmx-partial-response",
     "partialdef",
     "partialdef-inline",
     "partial",
@@ -48,6 +51,9 @@ EXPECTED_CLASSIFICATIONS = {
         "htmx-oob-swap",
     },
     "curated": {
+        "htmx-status-form",
+        "htmx-morph",
+        "htmx-partial-response",
         "htmx-file-upload",
         "htmx-bulk-actions",
         "htmx-dependent-dropdown",
@@ -368,3 +374,14 @@ def test_runtime_snippet_shape_contains_only_vscode_fields() -> None:
     data = json.loads((ROOT / "snippets" / "django-htmx.json").read_text(encoding="utf-8"))
     assert [entry["prefix"] for entry in data.values()] == EXPECTED_PREFIXES
     assert all(set(entry) == {"prefix", "description", "body"} for entry in data.values())
+
+
+def test_editing_recipes_target_the_container_without_implicit_inheritance() -> None:
+    entries = {entry["prefix"]: entry for entry in _snippets_module.load_catalog()}
+    for prefix, target in (
+        ("htmx-click-to-edit", "closest article"),
+        ("htmx-table-row", "closest tr"),
+    ):
+        button = next(line for line in entries[prefix]["body"] if "hx-get=" in line)
+        assert f'hx-target="{target}"' in button
+        assert 'hx-swap="outerHTML"' in button

@@ -84,14 +84,14 @@ code --install-extension htmx-django-intellisense-*.vsix --force
 
 Open the `examples/` workspace (or any HTML/Django template project) and run through this smoke checklist:
 
-1. Open an `HTML` file and type `<div hx` — confirm `hx-get`, `hx-post`, and other attributes appear.
-1. Type `<div data-hx` — confirm `data-hx-get` aliases appear.
-1. Hover a known attribute such as `hx-get` — confirm documentation, version badges, and HTMX doc links appear.
-1. Hover an ordinary HTML attribute such as `class` — confirm no HTMX hover text appears.
-1. Type a misspelled attribute such as `hx-methd` — confirm a diagnostic appears.
-1. Press `Ctrl/Cmd+.` on the diagnostic — confirm quick fixes such as "Replace with 'hx-method'" and "Replace with 'data-hx-method'" are offered.
-1. Open a `django-html` file with `{% partialdef card inline %}` and `{% partial card %}` — confirm completion and go-to-definition work for local partials.
-1. Try the partial rename with `F2` — confirm both the definition and the call update.
+1. Open an `HTML` file and type `<div hx`. Confirm `hx-get`, `hx-post`, and other attributes appear.
+1. Type `<div data-hx`. Confirm `data-hx-get` aliases appear.
+1. Hover a known attribute such as `hx-get`. Confirm documentation, version badges, and HTMX doc links appear.
+1. Hover an ordinary HTML attribute such as `class`. Confirm no HTMX hover text appears.
+1. Type a misspelled attribute such as `hx-methd`. Confirm a diagnostic appears.
+1. Press `Ctrl/Cmd+.` on the diagnostic. Confirm quick fixes such as "Replace with 'hx-method'" and "Replace with 'data-hx-method'" are offered.
+1. Open a `django-html` file with `{% partialdef card inline %}` and `{% partial card %}`. Confirm completion and go-to-definition work for local partials.
+1. Try the partial rename with `F2`. Confirm both the definition and the call update.
 
 ## Inspect extension output
 

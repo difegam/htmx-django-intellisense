@@ -25,7 +25,7 @@ flowchart LR
 
 ## Build-time catalog
 
-`tools/src/htmx_django_intellisense/catalog.py` (run via `htmx-tools build-data`) merges HTMX `2.0.10` and `4.0.0-beta6` documentation into `htmx.catalog.json`. Each canonical attribute records descriptions, available major versions, version-specific official categories, documentation URLs, documented values, modifiers, deprecation metadata, and dynamic-name patterns. HTMX 2 categories come from its Core and Additional reference tables; HTMX 4 categories come from its exported attribute groups. The generated file is committed and CI regenerates it to detect drift.
+`tools/src/htmx_django_intellisense/catalog.py` (run via `htmx-tools build-data`) merges HTMX `2.0.10` and `4.0.0` documentation into `htmx.catalog.json`. Each canonical attribute records descriptions, available major versions, version-specific official categories, documentation URLs, documented values, modifiers, deprecation metadata, and dynamic-name patterns. HTMX 2 categories come from its Core and Additional reference tables; HTMX 4 categories come from the release attribute index (with support for the older beta attribute groups). The generated file is committed and CI regenerates it to detect drift.
 
 ## Runtime providers
 
