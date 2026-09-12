@@ -97,7 +97,6 @@ jobs:
     environment: vscode-marketplace
     permissions:
       contents: read
-      id-token: write
     steps:
       - name: Checkout release tag
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -119,15 +118,10 @@ jobs:
           name: extension-vsix
           path: dist
 
-      - name: Azure login (Entra workload identity federation)
-        uses: azure/login@7ddb5af1ef8758cf1353cf3b42f940aee27ba21c # v3.0.0
-        with:
-          client-id: ${{ vars.AZURE_CLIENT_ID }}
-          tenant-id: ${{ vars.AZURE_TENANT_ID }}
-          allow-no-subscriptions: true
-
       - name: Publish to Marketplace
-        run: npm exec --offline -- vsce publish --azure-credential --packagePath dist/extension.vsix
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: npm exec --offline -- vsce publish -p "$VSCE_PAT" --packagePath dist/extension.vsix
 
   publish-open-vsx:
     name: Publish to Open VSX
