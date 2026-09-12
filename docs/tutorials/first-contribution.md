@@ -11,8 +11,8 @@ just init
 `just init` installs the Node and Python toolchains and the prek git hooks
 (`pre-commit` and `pre-push`). The hooks run Ruff, Prettier, mdformat, Pyrefly, ESLint,
 and the Python tests on commit, and `check-types`, TypeScript unit tests, and `knip` on
-push, so most regressions surface before you open a pull request. Skip this step and
-your clone has no local safety net.
+push, so most regressions surface before you open a pull request. If you skip this
+step, your clone has no local hooks and those regressions surface later in CI instead.
 
 The manual equivalent, if you are not using `just`:
 

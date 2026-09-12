@@ -60,7 +60,7 @@ syntax; JSON values remain editable without HCON suggestions.
 - Quote trigger selectors containing whitespace. Swap scroll targets use
     separate keys, for example `show:top showTarget:#results`.
 - `hx-preload` and `hx-pending` require their corresponding extension scripts.
-    Merely recognizing their attributes does not load those extensions.
+    Recognizing their attributes does not load those extensions.
 
 The new `htmx-status-form`, `htmx-morph`, and `htmx-partial-response` snippets
 are labeled HTMX 4. Static VS Code snippets are available in every version
