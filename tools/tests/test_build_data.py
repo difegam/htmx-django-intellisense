@@ -329,6 +329,7 @@ def test_release_values_and_examples() -> None:
     swap = {value["name"]: value for value in module.ATTRIBUTE_VALUES["hx-swap"]["values"]}
     for name in (
         "outerSync",
+        "upsert",
         "focusScroll:",
         "showTarget:",
         "scrollTarget:",
@@ -347,3 +348,7 @@ def test_release_values_and_examples() -> None:
         "replace:",
         "transition:",
     }
+    assert "upsert" in module.ATTRIBUTE_VALUES["hx-status"]["values"][0]["insertText"]
+    swap_oob = {value["name"]: value for value in module.ATTRIBUTE_VALUES["hx-swap-oob"]["values"]}
+    assert swap_oob["upsert"]["versions"] == ["4"]
+    assert swap_oob["upsert"]["insertText"] == "upsert${1::selector}"

@@ -212,7 +212,7 @@ ATTRIBUTE_VALUES: dict[str, dict[str, Any]] = {
             _value(
                 "swap:",
                 "Swap style for this response status",
-                insert_text="swap:${1|innerHTML,outerHTML,innerMorph,outerMorph,outerSync,textContent,before,after,prepend,append,delete,none|}",
+                insert_text="swap:${1|innerHTML,outerHTML,innerMorph,outerMorph,outerSync,upsert,textContent,before,after,prepend,append,delete,none|}",
                 versions=["4"],
                 kind="modifier",
             ),
@@ -554,6 +554,12 @@ ATTRIBUTE_VALUES["hx-swap"]["values"].extend(
         _value(
             "outerSync", "Morph attributes and replace children", versions=["4"], kind="strategy"
         ),
+        _value(
+            "upsert",
+            "Update existing elements by id and insert new ones",
+            versions=["4"],
+            kind="strategy",
+        ),
         *[
             _value(
                 f"{name}:",
@@ -589,6 +595,15 @@ ATTRIBUTE_VALUES["hx-swap-oob"]["values"].append(
         "outerSync",
         "Morph attributes and replace children",
         insert_text="outerSync${1::selector}",
+        versions=["4"],
+        kind="strategy",
+    )
+)
+ATTRIBUTE_VALUES["hx-swap-oob"]["values"].append(
+    _value(
+        "upsert",
+        "Update existing elements by id and insert new ones",
+        insert_text="upsert${1::selector}",
         versions=["4"],
         kind="strategy",
     )

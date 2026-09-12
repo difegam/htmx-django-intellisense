@@ -1027,7 +1027,7 @@
           "name": "swap:",
           "description": "Swap style for this response status",
           "kind": "modifier",
-          "insertText": "swap:${1|innerHTML,outerHTML,innerMorph,outerMorph,outerSync,textContent,before,after,prepend,append,delete,none|}",
+          "insertText": "swap:${1|innerHTML,outerHTML,innerMorph,outerMorph,outerSync,upsert,textContent,before,after,prepend,append,delete,none|}",
           "versions": [
             "4"
           ]
@@ -1249,6 +1249,14 @@
           ]
         },
         {
+          "name": "upsert",
+          "description": "Update existing elements by id and insert new ones",
+          "kind": "strategy",
+          "versions": [
+            "4"
+          ]
+        },
+        {
           "name": "focusScroll:",
           "description": "Scroll to restored focus",
           "kind": "modifier",
@@ -1437,6 +1445,15 @@
           "description": "Morph attributes and replace children",
           "kind": "strategy",
           "insertText": "outerSync${1::selector}",
+          "versions": [
+            "4"
+          ]
+        },
+        {
+          "name": "upsert",
+          "description": "Update existing elements by id and insert new ones",
+          "kind": "strategy",
+          "insertText": "upsert${1::selector}",
           "versions": [
             "4"
           ]
