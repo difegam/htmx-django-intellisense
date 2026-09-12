@@ -15,10 +15,10 @@ diagnostics, quick fixes, snippets, and Django 6 template partial support.
       <img src="https://img.shields.io/badge/DeepWiki-View-0C4B33.png" alt="DeepWiki">
   </a>
   <br>
-  <a href="https://marketplace.visualstudio.com/items?itemName=difegam.htmx-django-intellisense">
+  <a href="https://marketplace.visualstudio.com/items?itemName=difegam3.htmx-django-intellisense">
     <img src="https://img.shields.io/badge/VS%20Marketplace-v0.1.0-0C4B33" alt="VS Marketplace Version">
   </a>
-  <a href="https://open-vsx.org/extension/difegam/htmx-django-intellisense">
+  <a href="https://open-vsx.org/extension/difegam3/htmx-django-intellisense">
     <img src="https://img.shields.io/badge/Open%20VSX-v0.1.0-0C4B33" alt="Open VSX Version">
   </a>
 </p>

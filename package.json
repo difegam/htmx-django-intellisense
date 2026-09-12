@@ -3,7 +3,7 @@
   "displayName": "HTMX Django IntelliSense",
   "description": "Offline HTMX 2/4 IntelliSense, diagnostics, snippets, and Django 6 template partials for VS Code.",
   "version": "0.1.0",
-  "publisher": "difegam",
+  "publisher": "difegam3",
   "license": "Apache-2.0",
   "preview": true,
   "extensionKind": [
