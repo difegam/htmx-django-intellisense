@@ -5,7 +5,7 @@
 Write HTMX faster in VS Code with offline completions, hover documentation,
 diagnostics, quick fixes, snippets, and Django 6 template partial support.
 
-[Install from the Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=difegam.htmx-django-intellisense) · [Install from Open VSX](https://open-vsx.org/extension/difegam/htmx-django-intellisense)
+[Install from the Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=difegam3.htmx-django-intellisense) · [Install from Open VSX](https://open-vsx.org/extension/difegam3/htmx-django-intellisense)
 
 <p align="center">
   <a href="https://github.com/difegam/htmx-django-intellisense/blob/main/LICENSE.txt">
@@ -35,9 +35,9 @@ diagnostics, quick fixes, snippets, and Django 6 template partial support.
 
 ## Installation
 
-Install **HTMX Django IntelliSense** from the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=difegam.htmx-django-intellisense) or [Open VSX](https://open-vsx.org/extension/difegam/htmx-django-intellisense) when the listings are published.
+Install **HTMX Django IntelliSense** from the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=difegam3.htmx-django-intellisense) or [Open VSX](https://open-vsx.org/extension/difegam3/htmx-django-intellisense).
 
-Until then, install a local VSIX from a checkout:
+Alternatively, install a local VSIX from a checkout:
 
 ```bash
 npm install
