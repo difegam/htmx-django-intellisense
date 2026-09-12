@@ -5,6 +5,12 @@ The project follows [Keep a Changelog](https://keepachangelog.com/) conventions 
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-09-13
+
+### Fixed
+
+- Corrected stale `difegam` publisher slug to `difegam3` in the README install links and installation guide, and removed outdated "not yet published" language now that the extension is live.
+
 ## [0.1.0] - 2026-09-12
 
 Initial public release.
