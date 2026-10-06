@@ -1,6 +1,8 @@
-<form method="post" action="{% url '${1:view-name}' %}"
+<form method="post"
+      action="{% url '${1:view-name}' %}"
       hx-post="{% url '${1:view-name}' %}"
-      hx-target="${2:#content}" hx-swap="${3:innerHTML}">
-  {% csrf_token %}
-  $0
+      hx-target="${2:#content}"
+      hx-swap="${3:innerHTML}">
+    {% csrf_token %}
+    $0
 </form>

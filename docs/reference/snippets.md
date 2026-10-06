@@ -50,9 +50,10 @@ Django URL-backed HTMX GET button.
 **Classification:** Common
 
 ```django
-<button type="button" hx-get="{% url 'view-name' %}" hx-target="#content" hx-swap="innerHTML">
-  Load
-</button>
+<button type="button"
+        hx-get="{% url 'view-name' %}"
+        hx-target="#content"
+        hx-swap="innerHTML">Load</button>
 ```
 
 **Endpoint or context:** The view returns the HTML fragment that should replace the selected target.
@@ -64,11 +65,13 @@ CSRF-safe Django form submitted through HTMX.
 **Classification:** Common
 
 ```django
-<form method="post" action="{% url 'view-name' %}"
+<form method="post"
+      action="{% url 'view-name' %}"
       hx-post="{% url 'view-name' %}"
-      hx-target="#content" hx-swap="innerHTML">
-  {% csrf_token %}
-  <!-- Add content here. -->
+      hx-target="#content"
+      hx-swap="innerHTML">
+    {% csrf_token %}
+    <!-- Add content here. -->
 </form>
 ```
 
@@ -81,13 +84,14 @@ CSRF-safe Django delete form submitted through POST.
 **Classification:** Common
 
 ```django
-<form method="post" action="{% url 'delete-view' object.pk %}"
+<form method="post"
+      action="{% url 'delete-view' object.pk %}"
       hx-post="{% url 'delete-view' object.pk %}"
       hx-confirm="Are you sure?"
       hx-target="closest .item"
       hx-swap="outerHTML">
-  {% csrf_token %}
-  <button type="submit">Delete</button>
+    {% csrf_token %}
+    <button type="submit">Delete</button>
 </form>
 ```
 
@@ -100,7 +104,8 @@ Debounced Django HTMX search input.
 **Classification:** Common
 
 ```django
-<input type="search" name="q"
+<input type="search"
+       name="q"
        hx-get="{% url 'search-view' %}"
        hx-trigger="input changed delay:300ms, search"
        hx-target="#results">
@@ -115,12 +120,14 @@ Django form replaced with server-rendered validation state.
 **Classification:** Common
 
 ```django
-<form method="post" action="{% url 'validate-view' %}"
+<form method="post"
+      action="{% url 'validate-view' %}"
       hx-post="{% url 'validate-view' %}"
-      hx-target="this" hx-swap="outerHTML">
-  {% csrf_token %}
-  {{ form.as_p }}
-  <button type="submit">Save</button>
+      hx-target="this"
+      hx-swap="outerHTML">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Save</button>
 </form>
 ```
 
@@ -133,16 +140,19 @@ CSRF-safe multipart file upload with a status target.
 **Classification:** Curated recipe
 
 ```django
-<form method="post" action="{% url 'upload-view' %}" enctype="multipart/form-data"
+<form method="post"
+      action="{% url 'upload-view' %}"
+      enctype="multipart/form-data"
       hx-post="{% url 'upload-view' %}"
       hx-encoding="multipart/form-data"
       hx-target="#upload-result"
-      hx-swap="innerHTML" hx-indicator="#upload-indicator">
-  {% csrf_token %}
-  <label for="upload-file">Choose a file</label>
-  <input id="upload-file" type="file" name="file" required>
-  <button type="submit">Upload</button>
-  <span id="upload-indicator" class="htmx-indicator" role="status">Uploading…</span>
+      hx-swap="innerHTML"
+      hx-indicator="#upload-indicator">
+    {% csrf_token %}
+    <label for="upload-file">Choose a file</label>
+    <input id="upload-file" type="file" name="file" required>
+    <button type="submit">Upload</button>
+    <span id="upload-indicator" class="htmx-indicator" role="status">Uploading…</span>
 </form>
 <div id="upload-result" aria-live="polite"></div>
 ```
@@ -156,23 +166,34 @@ CSRF-safe bulk action form for Django objects.
 **Classification:** Curated recipe
 
 ```django
-<form method="post" action="{% url 'bulk-view' %}"
+<form method="post"
+      action="{% url 'bulk-view' %}"
       hx-post="{% url 'bulk-view' %}"
       hx-target="#items-body"
       hx-swap="outerHTML">
-  {% csrf_token %}
-  <table>
-    <thead><tr><th scope="col">Select</th><th scope="col">Item</th></tr></thead>
-    <tbody id="items-body">
-      {% for object in objects %}
-        <tr>
-          <td><input type="checkbox" name="selected" value="{{ object.pk }}" aria-label="Select {{ object }}"></td>
-          <td>{{ object }}</td>
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  <button type="submit">Apply to selected</button>
+    {% csrf_token %}
+    <table>
+        <thead>
+            <tr>
+                <th scope="col">Select</th>
+                <th scope="col">Item</th>
+            </tr>
+        </thead>
+        <tbody id="items-body">
+            {% for object in objects %}
+                <tr>
+                    <td>
+                        <input type="checkbox"
+                               name="selected"
+                               value="{{ object.pk }}"
+                               aria-label="Select {{ object }}">
+                    </td>
+                    <td>{{ object }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <button type="submit">Apply to selected</button>
 </form>
 ```
 
@@ -186,13 +207,12 @@ Django select that loads options for a dependent field.
 
 ```django
 <label for="parent-select">Category</label>
-<select id="parent-select" name="category"
+<select id="parent-select"
+        name="category"
         hx-get="{% url 'options-view' %}"
         hx-trigger="change"
         hx-target="#dependent-select"
-        hx-swap="innerHTML">
-  <!-- Add content here. -->
-</select>
+        hx-swap="innerHTML"><!-- Add content here. --></select>
 <label for="dependent-select">Option</label>
 <select id="dependent-select" name="option"></select>
 ```
@@ -206,13 +226,16 @@ HTMX 4 Django form with status-specific validation handling.
 **Classification:** Curated recipe
 
 ```django
-<form method="post" action="{% url 'view-name' %}"
-      hx-post="{% url 'view-name' %}" hx-target="#result"
-      hx-status:422="swap:innerHTML target:#errors" hx-status:5xx="swap:none">
-  {% csrf_token %}
-  <div id="errors" role="alert"></div>
-  <!-- Add content here. -->
-  <button type="submit">Save</button>
+<form method="post"
+      action="{% url 'view-name' %}"
+      hx-post="{% url 'view-name' %}"
+      hx-target="#result"
+      hx-status:422="swap:innerHTML target:#errors"
+      hx-status:5xx="swap:none">
+    {% csrf_token %}
+    <div id="errors" role="alert"></div>
+    <!-- Add content here. -->
+    <button type="submit">Save</button>
 </form>
 <div id="result"></div>
 ```
@@ -229,12 +252,11 @@ Load the next Django page when revealed.
 
 ```django
 {% if page_obj.has_next %}
-  <div hx-get="?page={{ page_obj.next_page_number }}"
-       hx-trigger="revealed"
-       hx-target="this" hx-swap="outerHTML"
-       role="status">
-    Loading…
-  </div>
+    <div hx-get="?page={{ page_obj.next_page_number }}"
+         hx-trigger="revealed"
+         hx-target="this"
+         hx-swap="outerHTML"
+         role="status">Loading…</div>
 {% endif %}
 ```
 
@@ -251,9 +273,8 @@ Poll a Django view until work is complete.
      hx-trigger="every 5s"
      hx-target="this"
      hx-swap="outerHTML"
-     role="status" aria-live="polite">
-  Waiting…
-</div>
+     role="status"
+     aria-live="polite">Waiting…</div>
 ```
 
 **Endpoint or context:** The status view returns the same polling region while work continues and omits hx-trigger after completion.
@@ -270,7 +291,7 @@ Load a Django fragment when its placeholder appears.
          hx-target="this"
          hx-swap="outerHTML"
          aria-busy="true">
-  <p class="htmx-indicator" role="status">Loading…</p>
+    <p class="htmx-indicator" role="status">Loading…</p>
 </section>
 ```
 
@@ -284,12 +305,16 @@ Progressively enhance Django navigation with history updates.
 
 ```django
 <nav aria-label="Primary">
-  <a href="{% url 'home' %}" hx-boost="true"
-     hx-target="#main-content" hx-select="#main-content"
-     hx-swap="outerHTML" hx-push-url="true">Home</a>
-  <!-- Add content here. -->
+    <a href="{% url 'home' %}"
+       hx-boost="true"
+       hx-target="#main-content"
+       hx-select="#main-content"
+       hx-swap="outerHTML"
+       hx-push-url="true">Home</a>
+    <!-- Add content here. -->
 </nav>
-<main id="main-content" tabindex="-1"></main>
+<main id="main-content" tabindex="-1">
+</main>
 ```
 
 **Endpoint or context:** Each linked view returns a normal full page containing the same main-content element, which hx-select extracts.
@@ -305,9 +330,10 @@ Poll server-rendered progress for a Django task.
      hx-trigger="every 1s"
      hx-target="this"
      hx-swap="outerHTML"
-     role="status" aria-live="polite">
-  <label for="task-progress">Progress</label>
-  <progress id="task-progress" value="{{ task.progress }}" max="100">{{ task.progress }}%</progress>
+     role="status"
+     aria-live="polite">
+    <label for="task-progress">Progress</label>
+    <progress id="task-progress" value="{{ task.progress }}" max="100">{{ task.progress }}%</progress>
 </div>
 ```
 
@@ -323,8 +349,11 @@ Replace a Django object summary with an edit form.
 
 ```django
 <article>
-  <h2>{{ object }}</h2>
-  <button type="button" hx-target="closest article" hx-swap="outerHTML" hx-get="{% url 'edit-view' object.pk %}">Edit</button>
+    <h2>{{ object }}</h2>
+    <button type="button"
+            hx-target="closest article"
+            hx-swap="outerHTML"
+            hx-get="{% url 'edit-view' object.pk %}">Edit</button>
 </article>
 ```
 
@@ -338,8 +367,13 @@ Replace a Django table row with server-rendered editing controls.
 
 ```django
 <tr id="item-{{ object.pk }}">
-  <th scope="row">{{ object }}</th>
-  <td><button type="button" hx-target="closest tr" hx-swap="outerHTML" hx-get="{% url 'edit-view' object.pk %}">Edit</button></td>
+    <th scope="row">{{ object }}</th>
+    <td>
+        <button type="button"
+                hx-target="closest tr"
+                hx-swap="outerHTML"
+                hx-get="{% url 'edit-view' object.pk %}">Edit</button>
+    </td>
 </tr>
 ```
 
@@ -352,12 +386,11 @@ Load a script-free non-modal dialog from a Django view.
 **Classification:** Curated recipe
 
 ```django
-<button type="button" hx-get="{% url 'dialog-view' object.pk %}"
+<button type="button"
+        hx-get="{% url 'dialog-view' object.pk %}"
         hx-target="#dialog"
         hx-swap="outerHTML"
-        aria-controls="dialog">
-  Open dialog
-</button>
+        aria-controls="dialog">Open dialog</button>
 <dialog id="dialog" aria-labelledby="dialog-title"></dialog>
 ```
 
@@ -370,12 +403,17 @@ Load a Django view into a fixed CSS-only modal overlay.
 **Classification:** Curated recipe
 
 ```django
-<button type="button" hx-get="{% url 'modal-view' %}"
-        hx-target="#modal" hx-swap="innerHTML"
-        aria-haspopup="dialog" aria-controls="modal">
-  Open modal
-</button>
-<div id="modal" class="modal-container" role="dialog" aria-modal="true" aria-labelledby="modal-title"></div>
+<button type="button"
+        hx-get="{% url 'modal-view' %}"
+        hx-target="#modal"
+        hx-swap="innerHTML"
+        aria-haspopup="dialog"
+        aria-controls="modal">Open modal</button>
+<div id="modal"
+     class="modal-container"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="modal-title"></div>
 ```
 
 **Endpoint or context:** The modal view returns the overlay markup with underlay/close controls that target the same container and swap it empty to close; no JavaScript is required.
@@ -388,19 +426,21 @@ Replace server-rendered tabs and selected state.
 
 ```django
 <section id="tabs" aria-label="Sections">
-  <nav role="tablist">
-    <a id="tabs-overview" role="tab" aria-selected="true"
-       aria-controls="tabs-panel"
-       href="{% url 'tabs-view' 'overview' %}"
-       hx-get="{% url 'tabs-view' 'overview' %}"
-       hx-target="#tabs" hx-swap="outerHTML" hx-push-url="true">
-      Overview
-    </a>
-    <!-- Add content here. -->
-  </nav>
-  <div id="tabs-panel" role="tabpanel" aria-labelledby="tabs-overview">
-    {{ tab_content }}
-  </div>
+    <nav role="tablist">
+        <a id="tabs-overview"
+           role="tab"
+           aria-selected="true"
+           aria-controls="tabs-panel"
+           href="{% url 'tabs-view' 'overview' %}"
+           hx-get="{% url 'tabs-view' 'overview' %}"
+           hx-target="#tabs"
+           hx-swap="outerHTML"
+           hx-push-url="true">Overview</a>
+        <!-- Add content here. -->
+    </nav>
+    <div id="tabs-panel"
+         role="tabpanel"
+         aria-labelledby="tabs-overview">{{ tab_content }}</div>
 </section>
 ```
 
@@ -413,9 +453,11 @@ HTMX 4 state-preserving refresh.
 **Classification:** Curated recipe
 
 ```django
-<section id="live-region" hx-get="{% url 'fragment-view' %}"
-         hx-trigger="every 5s" hx-swap="innerMorph">
-  <!-- Add content here. -->
+<section id="live-region"
+         hx-get="{% url 'fragment-view' %}"
+         hx-trigger="every 5s"
+         hx-swap="innerMorph">
+    <!-- Add content here. -->
 </section>
 ```
 
@@ -431,7 +473,7 @@ Update a second region from a Django HTMX response.
 
 ```django
 <section id="summary" hx-swap-oob="true">
-  Updated summary
+    Updated summary
 </section>
 ```
 
@@ -445,7 +487,7 @@ Append an accessible notification from an HTMX response.
 
 ```django
 <div id="notifications" hx-swap-oob="beforeend:#notifications">
-  <p role="status" aria-live="polite">Saved successfully.</p>
+    <p role="status" aria-live="polite">Saved successfully.</p>
 </div>
 ```
 
@@ -459,7 +501,7 @@ HTMX 4 response fragment with explicit target and swap.
 
 ```django
 <hx-partial hx-target="#notifications" hx-swap="append">
-  <!-- Add content here. -->
+<!-- Add content here. -->
 </hx-partial>
 ```
 
@@ -475,7 +517,7 @@ Define a Django 6 template partial.
 
 ```django
 {% partialdef partial_name %}
-  <!-- Add content here. -->
+<!-- Add content here. -->
 {% endpartialdef %}
 ```
 
@@ -489,7 +531,7 @@ Define and render an inline Django 6 template partial.
 
 ```django
 {% partialdef partial_name inline %}
-  <!-- Add content here. -->
+<!-- Add content here. -->
 {% endpartialdef %}
 ```
 

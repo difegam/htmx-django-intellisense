@@ -1,10 +1,9 @@
 <label for="${1:parent-select}">${2:Category}</label>
-<select id="${1:parent-select}" name="${3:category}"
+<select id="${1:parent-select}"
+        name="${3:category}"
         hx-get="{% url '${4:options-view}' %}"
         hx-trigger="change"
         hx-target="#${5:dependent-select}"
-        hx-swap="innerHTML">
-  $0
-</select>
+        hx-swap="innerHTML">$0</select>
 <label for="${5:dependent-select}">${6:Option}</label>
 <select id="${5:dependent-select}" name="${7:option}"></select>

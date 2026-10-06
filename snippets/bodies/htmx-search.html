@@ -1,4 +1,5 @@
-<input type="search" name="${1:q}"
+<input type="search"
+       name="${1:q}"
        hx-get="{% url '${2:search-view}' %}"
        hx-trigger="input changed delay:${3:300ms}, search"
        hx-target="${4:#results}">
