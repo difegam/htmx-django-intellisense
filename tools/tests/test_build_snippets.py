@@ -126,6 +126,14 @@ def test_load_catalog_resolves_body_files_and_preserves_blank_lines(tmp_path: Pa
     ]
 
 
+def test_load_catalog_removes_only_one_final_newline(tmp_path: Path) -> None:
+    module = _load_build_snippets_module()
+    source_path, bodies_dir = _write_source_catalog(tmp_path, [_source_entry()])
+    (bodies_dir / "safe-get.html").write_text("<button>Load</button>\n\n\n", encoding="utf-8")
+
+    assert module.load_catalog(source_path)[0]["body"] == ["<button>Load</button>", "", ""]
+
+
 def test_load_catalog_requires_body_file_and_rejects_inline_bodies(tmp_path: Path) -> None:
     module = _load_build_snippets_module()
     source_path, _ = _write_source_catalog(tmp_path, [_source_entry(body_file=None)])
@@ -161,6 +169,20 @@ def test_load_catalog_rejects_unsafe_or_missing_body_files(tmp_path: Path, body_
         module.load_catalog(source_path)
 
 
+def test_load_catalog_rejects_absolute_body_paths_inside_bodies(tmp_path: Path) -> None:
+    module = _load_build_snippets_module()
+    source_path, bodies_dir = _write_source_catalog(tmp_path, [_source_entry()])
+    body_path = bodies_dir / "safe-get.html"
+    body_path.write_text("<button>Load</button>\n", encoding="utf-8")
+    source_path.write_text(
+        json.dumps([_source_entry(body_file=str(body_path))]),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="htmx-safe-get"):
+        module.load_catalog(source_path)
+
+
 def test_load_catalog_rejects_empty_unreadable_duplicate_and_orphaned_body_files(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -186,7 +208,16 @@ def test_load_catalog_rejects_empty_unreadable_duplicate_and_orphaned_body_files
     monkeypatch.undo()
 
     source_path.write_text(
-        json.dumps([_source_entry(), _source_entry(name="Second", prefix="htmx-second")]),
+        json.dumps(
+            [
+                _source_entry(),
+                _source_entry(
+                    name="Second",
+                    prefix="htmx-second",
+                    body_file="bodies/./safe-get.html",
+                ),
+            ]
+        ),
         encoding="utf-8",
     )
     with pytest.raises(ValueError, match=re.escape("safe-get.html")):
@@ -212,7 +243,7 @@ def test_source_catalog_uses_body_files_that_match_runtime_bodies() -> None:
     for entry in source_catalog:
         body_file = ROOT / "snippets" / entry["body_file"]
         assert (
-            body_file.read_text(encoding="utf-8").rstrip("\n").splitlines()
+            body_file.read_text(encoding="utf-8").removesuffix("\n").split("\n")
             == runtime_catalog[entry["name"]]["body"]
         )
 

@@ -77,8 +77,12 @@ def _describe_error(exc: ValidationError, label: str) -> str:
 
 def resolve_body_file(body_file: str, *, source_dir: Path) -> list[str]:
     """Read one safe, non-empty HTML snippet body file."""
+    body_path = Path(body_file)
+    if body_path.is_absolute():
+        raise ValueError("body file must be a relative path")
+
     bodies_dir = (source_dir / "bodies").resolve()
-    candidate = (source_dir / body_file).resolve()
+    candidate = (source_dir / body_path).resolve()
 
     if candidate.suffix != ".html":
         raise ValueError("body file must use the .html extension")
@@ -94,29 +98,33 @@ def resolve_body_file(body_file: str, *, source_dir: Path) -> list[str]:
 
     if not content.strip():
         raise ValueError(f"body file {body_file} must contain content")
-    return content.removesuffix("\n").splitlines()
+    return content.removesuffix("\n").split("\n")
 
 
 def resolve_catalog(catalog: list[dict[str, Any]], *, source_path: Path) -> list[dict[str, Any]]:
     """Resolve validated source metadata into semantic snippet entries."""
     source_entries: list[SourceSnippetEntry] = []
-    body_files: dict[str, str] = {}
+    source_dir = source_path.parent
+    body_files: dict[Path, str] = {}
     for index, raw in enumerate(catalog, start=1):
         label = raw.get("prefix") or raw.get("name") or f"entry {index}"
         try:
             entry = SourceSnippetEntry.model_validate(raw)
         except ValidationError as exc:
             raise ValueError(_describe_error(exc, label)) from exc
-        if entry.body_file in body_files:
+        body_path = Path(entry.body_file)
+        if body_path.is_absolute():
+            raise ValueError(f"{entry.prefix}: body file must be a relative path")
+        resolved_path = (source_dir / body_path).resolve()
+        if resolved_path in body_files:
             raise ValueError(
                 f"{entry.prefix}: body file {entry.body_file} is already referenced by "
-                f"{body_files[entry.body_file]}"
+                f"{body_files[resolved_path]}"
             )
-        body_files[entry.body_file] = entry.prefix
+        body_files[resolved_path] = entry.prefix
         source_entries.append(entry)
 
     resolved: list[dict[str, Any]] = []
-    source_dir = source_path.parent
     referenced_files: set[Path] = set()
     for entry in source_entries:
         try:
