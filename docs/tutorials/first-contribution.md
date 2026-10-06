@@ -9,10 +9,10 @@ just init
 ```
 
 `just init` installs the Node and Python toolchains and the prek git hooks
-(`pre-commit` and `pre-push`). The hooks run Ruff, Prettier, mdformat, Pyrefly, ESLint,
-and the Python tests on commit, and `check-types`, TypeScript unit tests, and `knip` on
-push, so most regressions surface before you open a pull request. If you skip this
-step, your clone has no local hooks and those regressions surface later in CI instead.
+(`pre-commit` and `pre-push`). The hooks run Ruff, djLint, Prettier, mdformat, Pyrefly,
+ESLint, and the Python tests on commit, and `check-types`, TypeScript unit tests, and
+`knip` on push, so most regressions surface before you open a pull request. If you skip
+this step, your clone has no local hooks and those regressions surface later in CI instead.
 
 The manual equivalent, if you are not using `just`:
 
@@ -79,6 +79,14 @@ The validator rejects scripts, inline event handlers, `hx-on`, JavaScript URLs o
 expressions, remote executable embeds, `hx-ext`, SSE, and WebSocket attributes.
 
 After editing source metadata or a body file:
+
+1. Format and lint the body file with djLint. Prettier deliberately ignores these mixed
+    Django and VS Code snippet templates.
+
+    ```bash
+    uv run --project tools prek run djlint-reformat-django --files snippets/bodies/<prefix>.html
+    uv run --project tools prek run djlint-django --files snippets/bodies/<prefix>.html
+    ```
 
 1. Run the generator:
 

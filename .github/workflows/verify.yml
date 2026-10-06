@@ -44,6 +44,12 @@ jobs:
       - name: Check formatting
         run: npm run format:check
 
+      - name: Check Django snippet formatting
+        run: |
+          uv run --project tools prek run djlint-reformat-django --all-files
+          git diff --exit-code -- snippets/bodies
+          uv run --project tools prek run djlint-django --all-files
+
       - name: Type-check TypeScript
         run: npm run check-types
 
