@@ -12,16 +12,19 @@ from htmx_django_intellisense.models import (
     CATEGORIES,
     CLASSIFICATIONS,
     SnippetEntry,
+    SourceSnippetEntry,
     snippet_preview,
     validate_source,
 )
 
 ROOT = Path(__file__).resolve().parents[3]
 SOURCE_FILE = ROOT / "snippets" / "django-htmx.source.json"
+BODIES_DIR = SOURCE_FILE.parent / "bodies"
 SNIPPET_FILE = ROOT / "snippets" / "django-htmx.json"
 DOCS_FILE = ROOT / "docs" / "reference" / "snippets.md"
 
 __all__ = [
+    "BODIES_DIR",
     "CATEGORIES",
     "CLASSIFICATIONS",
     "DOCS_FILE",
@@ -31,6 +34,8 @@ __all__ = [
     "load_catalog",
     "render_docs",
     "render_snippets",
+    "resolve_body_file",
+    "resolve_catalog",
     "snippet_preview",
     "sync_outputs",
     "validate_catalog",
@@ -38,20 +43,25 @@ __all__ = [
 
 
 def load_catalog(path: Path = SOURCE_FILE) -> list[dict[str, Any]]:
-    """Load a catalog and require an array of object entries."""
+    """Load source metadata and resolve its snippet body files."""
     data = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(data, list):
         raise ValueError("catalog root must be an array")
     if not all(isinstance(entry, dict) for entry in data):
         raise ValueError("every catalog entry must be an object")
-    return data
+    return resolve_catalog(data, source_path=path)
 
 
 def _describe_error(exc: ValidationError, label: str) -> str:
     errors = exc.errors()
     missing = sorted(str(err["loc"][-1]) for err in errors if err["type"] == "missing")
     extra = sorted(str(err["loc"][-1]) for err in errors if err["type"] == "extra_forbidden")
-    other = [err["msg"] for err in errors if err["type"] not in {"missing", "extra_forbidden"}]
+    other = []
+    for error in errors:
+        if error["type"] in {"missing", "extra_forbidden"}:
+            continue
+        location = ".".join(str(part) for part in error["loc"])
+        other.append(f"{location} {error['msg']}".strip())
 
     details = []
     if missing:
@@ -63,6 +73,67 @@ def _describe_error(exc: ValidationError, label: str) -> str:
     if other:
         return f"{label}: {other[0]}"
     return f"{label}: {exc}"
+
+
+def resolve_body_file(body_file: str, *, source_dir: Path) -> list[str]:
+    """Read one safe, non-empty HTML snippet body file."""
+    bodies_dir = (source_dir / "bodies").resolve()
+    candidate = (source_dir / body_file).resolve()
+
+    if candidate.suffix != ".html":
+        raise ValueError("body file must use the .html extension")
+    try:
+        candidate.relative_to(bodies_dir)
+    except ValueError as exc:
+        raise ValueError("body file must be inside the bodies directory") from exc
+
+    try:
+        content = candidate.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise ValueError(f"cannot read body file {body_file}: {exc}") from exc
+
+    if not content.strip():
+        raise ValueError(f"body file {body_file} must contain content")
+    return content.removesuffix("\n").splitlines()
+
+
+def resolve_catalog(catalog: list[dict[str, Any]], *, source_path: Path) -> list[dict[str, Any]]:
+    """Resolve validated source metadata into semantic snippet entries."""
+    source_entries: list[SourceSnippetEntry] = []
+    body_files: dict[str, str] = {}
+    for index, raw in enumerate(catalog, start=1):
+        label = raw.get("prefix") or raw.get("name") or f"entry {index}"
+        try:
+            entry = SourceSnippetEntry.model_validate(raw)
+        except ValidationError as exc:
+            raise ValueError(_describe_error(exc, label)) from exc
+        if entry.body_file in body_files:
+            raise ValueError(
+                f"{entry.prefix}: body file {entry.body_file} is already referenced by "
+                f"{body_files[entry.body_file]}"
+            )
+        body_files[entry.body_file] = entry.prefix
+        source_entries.append(entry)
+
+    resolved: list[dict[str, Any]] = []
+    source_dir = source_path.parent
+    referenced_files: set[Path] = set()
+    for entry in source_entries:
+        try:
+            body = resolve_body_file(entry.body_file, source_dir=source_dir)
+        except ValueError as exc:
+            raise ValueError(f"{entry.prefix}: {exc}") from exc
+        referenced_files.add((source_dir / entry.body_file).resolve())
+        resolved.append({**entry.model_dump(exclude={"body_file"}), "body": body})
+
+    bodies_dir = (source_dir / "bodies").resolve()
+    orphaned_files = sorted(path.resolve() for path in bodies_dir.rglob("*.html") if path.is_file())
+    unreferenced_files = [path for path in orphaned_files if path not in referenced_files]
+    if unreferenced_files:
+        names = ", ".join(path.name for path in unreferenced_files)
+        raise ValueError(f"unreferenced snippet body files: {names}")
+
+    return resolved
 
 
 def validate_catalog(catalog: list[dict[str, Any]]) -> None:

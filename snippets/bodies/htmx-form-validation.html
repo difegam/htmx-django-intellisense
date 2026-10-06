@@ -1,0 +1,7 @@
+<form method="post" action="{% url '${1:validate-view}' %}"
+      hx-post="{% url '${1:validate-view}' %}"
+      hx-target="this" hx-swap="outerHTML">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit">${2:Save}</button>
+</form>

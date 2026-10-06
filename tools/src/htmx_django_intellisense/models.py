@@ -107,6 +107,20 @@ def snippet_preview(body: list[str]) -> str:
     return "\n".join(lines).rstrip()
 
 
+class SourceSnippetEntry(BaseModel):
+    """Represent snippet metadata before body-file resolution."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str
+    prefix: str
+    category: str
+    classification: str
+    description: str
+    body_file: str
+    usage: str
+
+
 class SnippetEntry(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -137,8 +151,10 @@ class SnippetEntry(BaseModel):
         if (self.category == "Django partials") != (self.classification == "django-6"):
             raise ValueError(f"{label}: Django partials must use the django-6 classification")
 
-        if not self.body or not all(isinstance(line, str) and line for line in self.body):
-            raise ValueError(f"{label}: body must be a non-empty array of non-empty strings")
+        if not self.body or not all(isinstance(line, str) for line in self.body):
+            raise ValueError(f"{label}: body must be a non-empty array of strings")
+        if not any(line.strip() for line in self.body):
+            raise ValueError(f"{label}: body must contain content")
 
         markup = "\n".join(self.body)
         if MUTATING_ATTRIBUTE_PATTERN.search(markup):

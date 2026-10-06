@@ -1,0 +1,12 @@
+<form method="post" action="{% url '${1:upload-view}' %}" enctype="multipart/form-data"
+      hx-post="{% url '${1:upload-view}' %}"
+      hx-encoding="multipart/form-data"
+      hx-target="#${2:upload-result}"
+      hx-swap="innerHTML" hx-indicator="#${3:upload-indicator}">
+  {% csrf_token %}
+  <label for="${4:upload-file}">${5:Choose a file}</label>
+  <input id="${4:upload-file}" type="file" name="${6:file}" required>
+  <button type="submit">${7:Upload}</button>
+  <span id="${3:upload-indicator}" class="htmx-indicator" role="status">Uploading…</span>
+</form>
+<div id="${2:upload-result}" aria-live="polite"></div>

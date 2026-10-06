@@ -1,0 +1,7 @@
+<button type="button" hx-get="{% url '${1:dialog-view}' ${2:object.pk} %}"
+        hx-target="#${3:dialog}"
+        hx-swap="outerHTML"
+        aria-controls="${3:dialog}">
+  ${4:Open dialog}
+</button>
+<dialog id="${3:dialog}" aria-labelledby="${3:dialog}-title"></dialog>

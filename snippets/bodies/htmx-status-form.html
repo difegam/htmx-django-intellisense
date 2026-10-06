@@ -1,0 +1,9 @@
+<form method="post" action="{% url '${1:view-name}' %}"
+      hx-post="{% url '${1:view-name}' %}" hx-target="#${2:result}"
+      hx-status:422="swap:innerHTML target:#${3:errors}" hx-status:5xx="swap:none">
+  {% csrf_token %}
+  <div id="${3:errors}" role="alert"></div>
+  $0
+  <button type="submit">${4:Save}</button>
+</form>
+<div id="${2:result}"></div>
