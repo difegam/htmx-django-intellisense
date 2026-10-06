@@ -35,6 +35,7 @@ docs/**
 AGENTS.md
 site/**
 snippets/*.source.json
+snippets/bodies/**
 .pre-commit-config.yaml
 zensical.toml
 justfile

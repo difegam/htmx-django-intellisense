@@ -62,6 +62,7 @@ def test_snippet_build_sources_are_excluded_from_vsix() -> None:
     ignored = (ROOT / ".vscodeignore").read_text(encoding="utf-8").splitlines()
     assert "tools/**" in ignored
     assert "snippets/*.source.json" in ignored
+    assert "snippets/bodies/**" in ignored
 
 
 def test_unbundled_build_output_is_excluded_from_vsix() -> None:
