@@ -442,7 +442,8 @@ def test_portable_pattern_regressions() -> None:
         "hx-select",
         "hx-swap",
         "hx-push-url",
-    } <= set(re.findall(r"\b(hx-[a-z0-9-]+)=", "\n".join(boost[1:4])))
+    } <= set(re.findall(r"\b(hx-[a-z0-9-]+)=", "\n".join(boost)))
+    assert re.search(r"<a\b[^>]*>\$\{4:Home}</a>", "\n".join(boost), re.S)
 
     upload = "\n".join(catalog["htmx-file-upload"]["body"])
     assert 'method="post"' in upload
@@ -512,6 +513,8 @@ def test_editing_recipes_target_the_container_without_implicit_inheritance() -> 
         ("htmx-click-to-edit", "closest article"),
         ("htmx-table-row", "closest tr"),
     ):
-        button = next(line for line in entries[prefix]["body"] if "hx-get=" in line)
-        assert f'hx-target="{target}"' in button
-        assert 'hx-swap="outerHTML"' in button
+        markup = "\n".join(entries[prefix]["body"])
+        button = re.search(r"<button\b(?P<attributes>[^>]*)>", markup, re.S)
+        assert button is not None
+        assert f'hx-target="{target}"' in button["attributes"]
+        assert 'hx-swap="outerHTML"' in button["attributes"]

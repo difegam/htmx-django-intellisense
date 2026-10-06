@@ -70,6 +70,7 @@ def test_unbundled_build_output_is_excluded_from_vsix() -> None:
     assert "out/**" in ignored
     assert "src/**" in ignored
     assert "tools/**" in ignored
+    assert ".superpowers/**" in ignored
     assert "esbuild.js" in ignored
 
 
