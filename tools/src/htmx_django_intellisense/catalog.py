@@ -17,7 +17,7 @@ from htmx_django_intellisense.http import make_client
 from htmx_django_intellisense.models import Catalog
 
 LOGGER = logging.getLogger(__name__)
-DEFAULT_HTMX_V2_VERSION = "2.0.10"
+DEFAULT_HTMX_V2_VERSION = "2.0.11"
 DEFAULT_HTMX_V4_VERSION = "4.0.0"
 DEFAULT_OUTPUT_FILE = Path("htmx.catalog.json")
 REMOVED_IN_HTMX_V2 = {"hx-sse", "hx-ws"}

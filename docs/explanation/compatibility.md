@@ -29,7 +29,7 @@ The extension validates only documented closed sets, such as `hx-boost`, `hx-enc
 
 ## HTMX 4.0 release support
 
-The offline catalog is pinned to **HTMX 4.0.0**, alongside HTMX 2.0.10. Select
+The offline catalog is pinned to **HTMX 4.0.0**, alongside HTMX 2.0.11. Select
 `htmxDjango.version: "4"` while migrating. The default remains `compatible`.
 
 This release adds `hx-query`, `hx-action`, `hx-morph-skip`, and

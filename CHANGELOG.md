@@ -5,6 +5,10 @@ The project follows [Keep a Changelog](https://keepachangelog.com/) conventions 
 
 ## [Unreleased]
 
+### Changed
+
+- Bumped pinned HTMX 2 version from `2.0.10` to `2.0.11` in the offline catalog.
+
 ## [0.1.1] - 2026-09-13
 
 ### Fixed
