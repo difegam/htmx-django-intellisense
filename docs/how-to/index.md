@@ -8,4 +8,5 @@ Use these guides for a specific editor or Django-template task.
 | [Configuration](configuration.md)                         | Changing completion, hover, validation, or version mode.             |
 | [Django Partials](django-partials.md)                     | Defining, completing, and navigating Django 6 partials.              |
 | [Django Response Contracts](django-response-contracts.md) | Returning full pages, partials, forms, headers, and OOB updates.     |
+| [Django Fragment Patterns](django-fragment-patterns.md)   | Applying the Django-first HTMX recipe catalog.                       |
 | [Troubleshooting](troubleshooting.md)                     | Completion, hover, validation, catalog, or docs behavior is missing. |

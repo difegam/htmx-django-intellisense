@@ -607,6 +607,29 @@ def test_core_django_contracts_are_portable() -> None:
     assert "HX-Trigger-After-Swap" in contracts
     assert "intentionally excluded" in contracts
 
+    fragments = (ROOT / "docs" / "how-to" / "django-fragment-patterns.md").read_text(
+        encoding="utf-8"
+    )
+    assert all(
+        prefix in fragments
+        for prefix in (
+            "htmx-pagination",
+            "htmx-autosave",
+            "htmx-toggle",
+            "htmx-soft-delete-undo",
+            "htmx-field-check",
+            "htmx-autocomplete",
+        )
+    )
+    assert 'hx-include="this"' in fragments
+
+    boundaries = (ROOT / "docs" / "explanation" / "hypermedia-patterns.md").read_text(
+        encoding="utf-8"
+    )
+    assert "HTTP 200" in boundaries
+    assert "SSE" in boundaries
+    assert "WebSockets" in boundaries
+
 
 def test_check_mode_reports_stale_files_without_writing(tmp_path: Path) -> None:
     module = _load_build_snippets_module()

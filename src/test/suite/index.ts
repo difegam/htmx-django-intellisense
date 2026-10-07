@@ -484,10 +484,12 @@ export async function run(): Promise<void> {
     vscode.Uri.joinPath(vscode.Uri.file(extension.extensionPath), "snippets", "django-htmx.json"),
   );
   const snippets = JSON.parse(new TextDecoder().decode(snippetBytes)) as Record<string, RuntimeSnippet>;
-  assert.equal(Object.keys(snippets).length, 26);
+  assert.equal(Object.keys(snippets).length, 34);
   const snippetsByPrefix = new Map(Object.values(snippets).map((snippet) => [snippet.prefix, snippet]));
   assert.match(snippetsByPrefix.get("htmx-post")?.body.join("\n") ?? "", /\{% csrf_token %\}/);
   assert.match(snippetsByPrefix.get("partialdef")?.body.join("\n") ?? "", /\{% partialdef /);
+  assert.match(snippetsByPrefix.get("htmx-autosave")?.body.join("\n") ?? "", /hx-sync="this:replace"/);
+  assert.match(snippetsByPrefix.get("htmx-soft-delete-undo")?.body.join("\n") ?? "", /\{% csrf_token %\}/);
   const snippetDocument = await vscode.workspace.openTextDocument({ language: "django-html", content: "" });
   const snippetEditor = await vscode.window.showTextDocument(snippetDocument);
   for (const [name, snippet] of Object.entries(snippets)) {

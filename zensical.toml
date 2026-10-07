@@ -19,6 +19,7 @@ nav = [
         { Overview = "explanation/index.md" },
         { Architecture = "explanation/architecture.md" },
         { Compatibility = "explanation/compatibility.md" },
+        { "Hypermedia Patterns" = "explanation/hypermedia-patterns.md" },
     ] },
     { Tutorials = [
         { Overview = "tutorials/index.md" },
@@ -31,6 +32,7 @@ nav = [
         { Configuration = "how-to/configuration.md" },
         { "Django Partials" = "how-to/django-partials.md" },
         { "Django Response Contracts" = "how-to/django-response-contracts.md" },
+        { "Django Fragment Patterns" = "how-to/django-fragment-patterns.md" },
         { Troubleshooting = "how-to/troubleshooting.md" },
     ] },
     { Operations = [
