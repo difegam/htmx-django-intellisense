@@ -14,6 +14,11 @@ matching view and response examples.
 
 | Prefix | Classification | Description |
 | --- | --- | --- |
+| `htmx-autosave` | Curated recipe | CSRF-safe debounced Django autosave form |
+| `htmx-toggle` | Curated recipe | CSRF-safe server-authoritative boolean toggle |
+| `htmx-soft-delete-undo` | Curated recipe | CSRF-safe soft delete that returns a server-authorized undo state |
+| `htmx-field-check` | Curated recipe | Debounced side-effect-free Django field availability check |
+| `htmx-autocomplete` | Curated recipe | Debounced Django autocomplete using a native datalist |
 | `htmx-get` | Common | Django URL-backed HTMX GET button |
 | `htmx-post` | Common | CSRF-safe Django form submitted through HTMX |
 | `htmx-delete` | Common | CSRF-safe Django delete form submitted through POST |
@@ -45,6 +50,182 @@ matching view and response examples.
 | `partial` | Django 6 | Render a same-file Django 6 template partial |
 
 ## Requests and forms
+
+### `htmx-autosave`
+
+CSRF-safe debounced Django autosave form.
+
+**Classification:** Curated recipe
+
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
+
+```django
+<form method="post" action="{% url 'autosave-view' object.pk %}"
+      hx-post="{% url 'autosave-view' object.pk %}"
+      hx-trigger="input changed delay:750ms" hx-sync="this:replace"
+      hx-target="#save-status" hx-swap="outerHTML">
+  {% csrf_token %}
+  <!-- Add content here. -->
+  <button type="submit">Save draft</button>
+  <output id="save-status" aria-live="polite">Not saved yet</output>
+</form>
+```
+
+**Endpoint or context:** The POST view validates and saves the draft, then returns the replacement save-status element.
+
+**Request kind:** POST
+
+**Context variables:** form, object
+
+**Security notes:** Keep the CSRF token and enforce authorization in the view.
+
+**Accessibility notes:** Use the live output for save state announcements.
+
+**Response contract:** Return a server-confirmed live save-status element.
+
+**Related snippets:** [`htmx-form-validation`](#htmx-form-validation), [`htmx-search`](#htmx-search)
+
+### `htmx-toggle`
+
+CSRF-safe server-authoritative boolean toggle.
+
+**Classification:** Curated recipe
+
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
+
+```django
+<article id="item-{{ object.pk }}">
+  <!-- Add content here. -->
+  <form method="post" action="{% url 'toggle-view' object.pk %}"
+        hx-post="{% url 'toggle-view' object.pk %}"
+        hx-target="closest article" hx-swap="outerHTML">
+    {% csrf_token %}
+    <button type="submit" aria-pressed="{{ object.enabled|yesno:'true,false' }}">Toggle</button>
+  </form>
+</article>
+```
+
+**Endpoint or context:** The POST view changes the server state and returns the complete article with its new state.
+
+**Request kind:** POST
+
+**Context variables:** object
+
+**Security notes:** Authorize the state change in the Django view.
+
+**Accessibility notes:** Keep aria-pressed synchronized with server state.
+
+**Response contract:** Return the same article root with the canonical boolean state.
+
+**Related snippets:** [`htmx-soft-delete-undo`](#htmx-soft-delete-undo)
+
+### `htmx-soft-delete-undo`
+
+CSRF-safe soft delete that returns a server-authorized undo state.
+
+**Classification:** Curated recipe
+
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
+
+```django
+<article id="item-{{ object.pk }}">
+  {% if object.deleted %}
+    <p role="status">Deleted</p>
+    <form method="post" action="{% url 'undo-view' object.pk %}"
+          hx-post="{% url 'undo-view' object.pk %}"
+          hx-target="closest article" hx-swap="outerHTML">
+      {% csrf_token %}
+      <button type="submit">Undo</button>
+    </form>
+  {% else %}
+    <!-- Add content here. -->
+    <form method="post" action="{% url 'delete-view' object.pk %}"
+          hx-post="{% url 'delete-view' object.pk %}"
+          hx-confirm="Delete this item?" hx-target="closest article" hx-swap="outerHTML">
+      {% csrf_token %}
+      <button type="submit">Delete</button>
+    </form>
+  {% endif %}
+</article>
+```
+
+**Endpoint or context:** The delete view marks the object deleted and the undo view reverses that server state; both return the article root.
+
+**Request kind:** POST
+
+**Context variables:** object
+
+**Security notes:** Use authorization and a server-side undo policy.
+
+**Accessibility notes:** Expose the deleted state through a status message.
+
+**Response contract:** Return the canonical article or undo tombstone after each state transition.
+
+**Related snippets:** [`htmx-delete`](#htmx-delete), [`htmx-toggle`](#htmx-toggle)
+
+### `htmx-field-check`
+
+Debounced side-effect-free Django field availability check.
+
+**Classification:** Curated recipe
+
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
+
+```django
+<input id="field" name="value"
+       hx-get="{% url 'check-view' %}" hx-trigger="input changed delay:400ms"
+       hx-sync="this:replace" hx-target="#field-status" hx-swap="outerHTML">
+<span id="field-status" aria-live="polite"></span>
+```
+
+**Endpoint or context:** The GET view checks the value without changing state and returns a replacement field-status element.
+
+**Request kind:** GET
+
+**Context variables:** field value
+
+**Accessibility notes:** Announce availability through the live status element.
+
+**Response contract:** Return a bounded status fragment and keep the endpoint side-effect-free.
+
+**Related snippets:** [`htmx-form-validation`](#htmx-form-validation), [`htmx-autocomplete`](#htmx-autocomplete)
+
+### `htmx-autocomplete`
+
+Debounced Django autocomplete using a native datalist.
+
+**Classification:** Curated recipe
+
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
+
+```django
+<input id="search" type="search" name="q" list="suggestions"
+       hx-get="{% url 'autocomplete-view' %}" hx-trigger="input changed delay:250ms"
+       hx-sync="this:replace" hx-target="#suggestions" hx-swap="innerHTML">
+<datalist id="suggestions"></datalist>
+```
+
+**Endpoint or context:** The autocomplete view returns bounded option elements for the native datalist.
+
+**Request kind:** GET
+
+**Context variables:** query parameter
+
+**Accessibility notes:** Retain the native input and datalist fallback.
+
+**Response contract:** Return bounded option elements only.
+
+**Related snippets:** [`htmx-search`](#htmx-search), [`htmx-field-check`](#htmx-field-check)
 
 ### `htmx-get`
 

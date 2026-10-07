@@ -12,6 +12,11 @@ from htmx_django_intellisense import snippets as _snippets_module
 
 ROOT = _snippets_module.ROOT
 EXPECTED_PREFIXES = [
+    "htmx-autosave",
+    "htmx-toggle",
+    "htmx-soft-delete-undo",
+    "htmx-field-check",
+    "htmx-autocomplete",
     "htmx-get",
     "htmx-post",
     "htmx-delete",
@@ -59,6 +64,11 @@ EXPECTED_CLASSIFICATIONS = {
     "curated": {
         "htmx-status-form",
         "htmx-filter-sort",
+        "htmx-autosave",
+        "htmx-toggle",
+        "htmx-soft-delete-undo",
+        "htmx-field-check",
+        "htmx-autocomplete",
         "htmx-morph",
         "htmx-partial-response",
         "htmx-file-upload",
@@ -525,6 +535,32 @@ def test_portable_pattern_regressions() -> None:
     assert 'hx-sync="this:replace"' in filter_sort
     assert 'hx-target="#${2:results}"' in filter_sort
     assert 'hx-push-url="true"' in filter_sort
+
+    autosave = "\n".join(catalog["htmx-autosave"]["body"])
+    assert 'method="post"' in autosave
+    assert "hx-post=" in autosave
+    assert "{% csrf_token %}" in autosave
+    assert "input changed delay:" in autosave
+    assert 'hx-sync="this:replace"' in autosave
+    assert 'aria-live="polite"' in autosave
+
+    for prefix in ("htmx-toggle", "htmx-soft-delete-undo"):
+        body = "\n".join(catalog[prefix]["body"])
+        assert 'method="post"' in body
+        assert "{% csrf_token %}" in body
+        assert 'hx-target="closest article"' in body
+        assert 'hx-swap="outerHTML"' in body
+
+    field_check = "\n".join(catalog["htmx-field-check"]["body"])
+    assert "hx-get=" in field_check
+    assert "hx-post=" not in field_check
+    assert 'hx-sync="this:replace"' in field_check
+    assert 'aria-live="polite"' in field_check
+
+    autocomplete = "\n".join(catalog["htmx-autocomplete"]["body"])
+    assert "hx-get=" in autocomplete
+    assert 'hx-sync="this:replace"' in autocomplete
+    assert "<datalist" in autocomplete
 
     validation = "\n".join(catalog["htmx-form-validation"]["body"])
     assert 'hx-target="this"' in validation
