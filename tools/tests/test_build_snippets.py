@@ -304,6 +304,49 @@ def test_catalog_schema_is_validated(overrides: dict, message: str) -> None:
         module.validate_catalog([_entry(**overrides)])
 
 
+def test_snippet_metadata_is_validated_and_rendered() -> None:
+    module = _load_build_snippets_module()
+    entry = _entry(
+        htmx_versions=["2", "4"],
+        django_versions=["4.2+"],
+        request_kind="GET",
+        context_variables=["page_obj"],
+        response_contract="Return the results root.",
+        security_notes=["GET requests are side-effect free."],
+        accessibility_notes=["Keep the native link fallback."],
+        related_snippets=["htmx-second"],
+    )
+    related = _entry(name="Second", prefix="htmx-second")
+
+    module.validate_catalog([entry, related])
+    assert set(json.loads(module.render_snippets([entry]))["Safe GET"]) == {
+        "prefix",
+        "description",
+        "body",
+    }
+
+    docs = module.render_docs([entry, related])
+    assert "**HTMX versions:** 2, 4" in docs
+    assert "**Django versions:** 4.2+" in docs
+    assert "**Request kind:** GET" in docs
+    assert "page_obj" in docs
+    assert "Return the results root." in docs
+    assert "GET requests are side-effect free." in docs
+    assert "Keep the native link fallback." in docs
+    assert "[`htmx-second`](#htmx-second)" in docs
+
+    with pytest.raises(ValueError, match="unknown HTMX version"):
+        module.validate_catalog([_entry(htmx_versions=["3"])])
+    with pytest.raises(ValueError, match="django_versions"):
+        module.validate_catalog([_entry(django_versions=[""])])
+    with pytest.raises(ValueError, match="Input should be"):
+        module.validate_catalog([_entry(request_kind="PATCH")])
+    with pytest.raises(ValueError, match="unknown related snippet"):
+        module.validate_catalog([_entry(related_snippets=["htmx-missing"])])
+    with pytest.raises(ValueError, match="may not relate to itself"):
+        module.validate_catalog([_entry(related_snippets=["htmx-safe-get"])])
+
+
 def test_malformed_json_and_snippet_placeholders_are_rejected(tmp_path: Path) -> None:
     module = _load_build_snippets_module()
     source = tmp_path / "broken.json"

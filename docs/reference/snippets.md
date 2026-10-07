@@ -49,6 +49,10 @@ Django URL-backed HTMX GET button.
 
 **Classification:** Common
 
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
+
 ```django
 <button type="button"
         hx-get="{% url 'view-name' %}"
@@ -63,6 +67,10 @@ Django URL-backed HTMX GET button.
 CSRF-safe Django form submitted through HTMX.
 
 **Classification:** Common
+
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
 
 ```django
 <form method="post"
@@ -82,6 +90,10 @@ CSRF-safe Django form submitted through HTMX.
 CSRF-safe Django delete form submitted through POST.
 
 **Classification:** Common
+
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
 
 ```django
 <form method="post"
@@ -103,6 +115,10 @@ Debounced Django HTMX search input.
 
 **Classification:** Common
 
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
+
 ```django
 <input type="search"
        name="q"
@@ -118,6 +134,10 @@ Debounced Django HTMX search input.
 Django form replaced with server-rendered validation state.
 
 **Classification:** Common
+
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
 
 ```django
 <form method="post"
@@ -138,6 +158,10 @@ Django form replaced with server-rendered validation state.
 CSRF-safe multipart file upload with a status target.
 
 **Classification:** Curated recipe
+
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
 
 ```django
 <form method="post"
@@ -164,6 +188,10 @@ CSRF-safe multipart file upload with a status target.
 CSRF-safe bulk action form for Django objects.
 
 **Classification:** Curated recipe
+
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
 
 ```django
 <form method="post"
@@ -205,6 +233,10 @@ Django select that loads options for a dependent field.
 
 **Classification:** Curated recipe
 
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
+
 ```django
 <label for="parent-select">Category</label>
 <select id="parent-select"
@@ -224,6 +256,10 @@ Django select that loads options for a dependent field.
 HTMX 4 Django form with status-specific validation handling.
 
 **Classification:** Curated recipe
+
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
 
 ```django
 <form method="post"
@@ -250,6 +286,10 @@ Load the next Django page when revealed.
 
 **Classification:** Common
 
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
+
 ```django
 {% if page_obj.has_next %}
     <div hx-get="?page={{ page_obj.next_page_number }}"
@@ -268,6 +308,10 @@ Poll a Django view until work is complete.
 
 **Classification:** Curated recipe
 
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
+
 ```django
 <div hx-get="{% url 'status-view' task.pk %}"
      hx-trigger="every 5s"
@@ -284,6 +328,10 @@ Poll a Django view until work is complete.
 Load a Django fragment when its placeholder appears.
 
 **Classification:** Common
+
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
 
 ```django
 <section hx-get="{% url 'fragment-view' %}"
@@ -302,6 +350,10 @@ Load a Django fragment when its placeholder appears.
 Progressively enhance Django navigation with history updates.
 
 **Classification:** Curated recipe
+
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
 
 ```django
 <nav aria-label="Primary">
@@ -325,6 +377,10 @@ Poll server-rendered progress for a Django task.
 
 **Classification:** Curated recipe
 
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
+
 ```django
 <div hx-get="{% url 'progress-view' task.pk %}"
      hx-trigger="every 1s"
@@ -347,6 +403,10 @@ Replace a Django object summary with an edit form.
 
 **Classification:** Common
 
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
+
 ```django
 <article>
     <h2>{{ object }}</h2>
@@ -364,6 +424,10 @@ Replace a Django object summary with an edit form.
 Replace a Django table row with server-rendered editing controls.
 
 **Classification:** Curated recipe
+
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
 
 ```django
 <tr id="item-{{ object.pk }}">
@@ -385,6 +449,10 @@ Load a script-free non-modal dialog from a Django view.
 
 **Classification:** Curated recipe
 
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
+
 ```django
 <button type="button"
         hx-get="{% url 'dialog-view' object.pk %}"
@@ -401,6 +469,10 @@ Load a script-free non-modal dialog from a Django view.
 Load a Django view into a fixed CSS-only modal overlay.
 
 **Classification:** Curated recipe
+
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
 
 ```django
 <button type="button"
@@ -423,6 +495,10 @@ Load a Django view into a fixed CSS-only modal overlay.
 Replace server-rendered tabs and selected state.
 
 **Classification:** Curated recipe
+
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
 
 ```django
 <section id="tabs" aria-label="Sections">
@@ -452,6 +528,10 @@ HTMX 4 state-preserving refresh.
 
 **Classification:** Curated recipe
 
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
+
 ```django
 <section id="live-region"
          hx-get="{% url 'fragment-view' %}"
@@ -471,6 +551,10 @@ Update a second region from a Django HTMX response.
 
 **Classification:** Common
 
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
+
 ```django
 <section id="summary" hx-swap-oob="true">
     Updated summary
@@ -485,6 +569,10 @@ Append an accessible notification from an HTMX response.
 
 **Classification:** Curated recipe
 
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
+
 ```django
 <div id="notifications" hx-swap-oob="beforeend:#notifications">
     <p role="status" aria-live="polite">Saved successfully.</p>
@@ -498,6 +586,10 @@ Append an accessible notification from an HTMX response.
 HTMX 4 response fragment with explicit target and swap.
 
 **Classification:** Curated recipe
+
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
 
 ```django
 <hx-partial hx-target="#notifications" hx-swap="append">
@@ -515,6 +607,10 @@ Define a Django 6 template partial.
 
 **Classification:** Django 6
 
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
+
 ```django
 {% partialdef partial_name %}
 <!-- Add content here. -->
@@ -529,6 +625,10 @@ Define and render an inline Django 6 template partial.
 
 **Classification:** Django 6
 
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
+
 ```django
 {% partialdef partial_name inline %}
 <!-- Add content here. -->
@@ -542,6 +642,10 @@ Define and render an inline Django 6 template partial.
 Render a same-file Django 6 template partial.
 
 **Classification:** Django 6
+
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
 
 ```django
 {% partial partial_name %}
