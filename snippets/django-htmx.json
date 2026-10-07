@@ -46,7 +46,53 @@
       "       name=\"${1:q}\"",
       "       hx-get=\"{% url '${2:search-view}' %}\"",
       "       hx-trigger=\"input changed delay:${3:300ms}, search\"",
+      "       hx-sync=\"this:replace\"",
       "       hx-target=\"${4:#results}\">"
+    ]
+  },
+  "HTMX Pagination": {
+    "prefix": "htmx-pagination",
+    "description": "Django pagination with fragment replacement and browser history",
+    "body": [
+      "<section id=\"${1:results}\">",
+      "  $0",
+      "  <nav aria-label=\"Pagination\">",
+      "    {% if page_obj.has_previous %}",
+      "      <a href=\"?page={{ page_obj.previous_page_number }}\" hx-get=\"?page={{ page_obj.previous_page_number }}\"",
+      "         hx-target=\"#${1:results}\" hx-swap=\"outerHTML\" hx-push-url=\"true\">Previous</a>",
+      "    {% endif %}",
+      "    <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>",
+      "    {% if page_obj.has_next %}",
+      "      <a href=\"?page={{ page_obj.next_page_number }}\" hx-get=\"?page={{ page_obj.next_page_number }}\"",
+      "         hx-target=\"#${1:results}\" hx-swap=\"outerHTML\" hx-push-url=\"true\">Next</a>",
+      "    {% endif %}",
+      "  </nav>",
+      "</section>"
+    ]
+  },
+  "HTMX Load More": {
+    "prefix": "htmx-load-more",
+    "description": "Explicit Django load-more link with a replaceable sentinel",
+    "body": [
+      "{% if page_obj.has_next %}",
+      "  <li class=\"${1:load-more}\">",
+      "    <a href=\"?page={{ page_obj.next_page_number }}\" hx-get=\"?page={{ page_obj.next_page_number }}\"",
+      "       hx-target=\"closest li\" hx-swap=\"outerHTML\">${2:Load more}</a>",
+      "  </li>",
+      "{% endif %}"
+    ]
+  },
+  "HTMX Filter and Sort": {
+    "prefix": "htmx-filter-sort",
+    "description": "URL-backed Django filter and sort form with HTMX updates",
+    "body": [
+      "<form method=\"get\" action=\"{% url '${1:list-view}' %}\" hx-get=\"{% url '${1:list-view}' %}\"",
+      "      hx-include=\"this\" hx-trigger=\"change, input changed delay:${3:300ms}\"",
+      "      hx-sync=\"this:replace\" hx-target=\"#${2:results}\" hx-swap=\"outerHTML\" hx-push-url=\"true\">",
+      "  <input type=\"search\" name=\"q\" value=\"{{ request.GET.q }}\">",
+      "  $0",
+      "  <button type=\"submit\">${4:Apply}</button>",
+      "</form>"
     ]
   },
   "HTMX Form Validation": {

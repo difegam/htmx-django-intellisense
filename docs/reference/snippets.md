@@ -18,6 +18,9 @@ matching view and response examples.
 | `htmx-post` | Common | CSRF-safe Django form submitted through HTMX |
 | `htmx-delete` | Common | CSRF-safe Django delete form submitted through POST |
 | `htmx-search` | Common | Debounced Django HTMX search input |
+| `htmx-pagination` | Common | Django pagination with fragment replacement and browser history |
+| `htmx-load-more` | Common | Explicit Django load-more link with a replaceable sentinel |
+| `htmx-filter-sort` | Curated recipe | URL-backed Django filter and sort form with HTMX updates |
 | `htmx-form-validation` | Common | Django form replaced with server-rendered validation state |
 | `htmx-file-upload` | Curated recipe | CSRF-safe multipart file upload with a status target |
 | `htmx-bulk-actions` | Curated recipe | CSRF-safe bulk action form for Django objects |
@@ -124,10 +127,123 @@ Debounced Django HTMX search input.
        name="q"
        hx-get="{% url 'search-view' %}"
        hx-trigger="input changed delay:300ms, search"
+       hx-sync="this:replace"
        hx-target="#results">
 ```
 
 **Endpoint or context:** The search view reads the input value and returns the current result-list fragment.
+
+**Request kind:** GET
+
+**Context variables:** query parameter
+
+**Accessibility notes:** Keep an accessible results-region label.
+
+**Response contract:** Return the current results fragment.
+
+**Related snippets:** [`htmx-filter-sort`](#htmx-filter-sort)
+
+### `htmx-pagination`
+
+Django pagination with fragment replacement and browser history.
+
+**Classification:** Common
+
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
+
+```django
+<section id="results">
+  <!-- Add content here. -->
+  <nav aria-label="Pagination">
+    {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}" hx-get="?page={{ page_obj.previous_page_number }}"
+         hx-target="#results" hx-swap="outerHTML" hx-push-url="true">Previous</a>
+    {% endif %}
+    <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}" hx-get="?page={{ page_obj.next_page_number }}"
+         hx-target="#results" hx-swap="outerHTML" hx-push-url="true">Next</a>
+    {% endif %}
+  </nav>
+</section>
+```
+
+**Endpoint or context:** The list view returns a full page for normal navigation and the complete results section for an HTMX request.
+
+**Request kind:** GET
+
+**Context variables:** page_obj
+
+**Accessibility notes:** Keep previous and next links as native navigation fallbacks.
+
+**Response contract:** Return the stable results root and vary page and fragment responses on HX-Request.
+
+**Related snippets:** [`htmx-filter-sort`](#htmx-filter-sort), [`htmx-load-more`](#htmx-load-more)
+
+### `htmx-load-more`
+
+Explicit Django load-more link with a replaceable sentinel.
+
+**Classification:** Common
+
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
+
+```django
+{% if page_obj.has_next %}
+  <li class="load-more">
+    <a href="?page={{ page_obj.next_page_number }}" hx-get="?page={{ page_obj.next_page_number }}"
+       hx-target="closest li" hx-swap="outerHTML">Load more</a>
+  </li>
+{% endif %}
+```
+
+**Endpoint or context:** The endpoint returns the next list items followed by a new load-more sentinel when another page exists.
+
+**Request kind:** GET
+
+**Context variables:** page_obj
+
+**Accessibility notes:** The link remains keyboard-accessible without HTMX.
+
+**Response contract:** Return list items and the next sentinel, not a full page.
+
+**Related snippets:** [`htmx-pagination`](#htmx-pagination), [`htmx-infinite`](#htmx-infinite)
+
+### `htmx-filter-sort`
+
+URL-backed Django filter and sort form with HTMX updates.
+
+**Classification:** Curated recipe
+
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
+
+```django
+<form method="get" action="{% url 'list-view' %}" hx-get="{% url 'list-view' %}"
+      hx-include="this" hx-trigger="change, input changed delay:300ms"
+      hx-sync="this:replace" hx-target="#results" hx-swap="outerHTML" hx-push-url="true">
+  <input type="search" name="q" value="{{ request.GET.q }}">
+  <!-- Add content here. -->
+  <button type="submit">Apply</button>
+</form>
+```
+
+**Endpoint or context:** The list view returns a full page for ordinary GET navigation and the complete results root for an HTMX request.
+
+**Request kind:** GET
+
+**Context variables:** request.GET
+
+**Accessibility notes:** The submit button provides a non-JavaScript fallback.
+
+**Response contract:** Return the stable results root and preserve canonical query parameters in the URL.
+
+**Related snippets:** [`htmx-search`](#htmx-search), [`htmx-pagination`](#htmx-pagination)
 
 ### `htmx-form-validation`
 

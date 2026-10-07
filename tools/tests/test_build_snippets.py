@@ -16,6 +16,9 @@ EXPECTED_PREFIXES = [
     "htmx-post",
     "htmx-delete",
     "htmx-search",
+    "htmx-pagination",
+    "htmx-load-more",
+    "htmx-filter-sort",
     "htmx-form-validation",
     "htmx-file-upload",
     "htmx-bulk-actions",
@@ -45,6 +48,8 @@ EXPECTED_CLASSIFICATIONS = {
         "htmx-post",
         "htmx-delete",
         "htmx-search",
+        "htmx-pagination",
+        "htmx-load-more",
         "htmx-form-validation",
         "htmx-infinite",
         "htmx-lazy",
@@ -53,6 +58,7 @@ EXPECTED_CLASSIFICATIONS = {
     },
     "curated": {
         "htmx-status-form",
+        "htmx-filter-sort",
         "htmx-morph",
         "htmx-partial-response",
         "htmx-file-upload",
@@ -497,6 +503,28 @@ def test_portable_pattern_regressions() -> None:
     search = "\n".join(catalog["htmx-search"]["body"])
     assert "input changed delay:" in search
     assert ", search" in search
+    assert 'hx-sync="this:replace"' in search
+
+    pagination = "\n".join(catalog["htmx-pagination"]["body"])
+    assert "href=" in pagination
+    assert "hx-get=" in pagination
+    assert 'hx-target="#${1:results}"' in pagination
+    assert 'hx-swap="outerHTML"' in pagination
+    assert 'hx-push-url="true"' in pagination
+
+    load_more = "\n".join(catalog["htmx-load-more"]["body"])
+    assert "href=" in load_more
+    assert 'hx-target="closest li"' in load_more
+    assert 'hx-swap="outerHTML"' in load_more
+
+    filter_sort = "\n".join(catalog["htmx-filter-sort"]["body"])
+    assert 'method="get"' in filter_sort
+    assert "action=" in filter_sort
+    assert "hx-get=" in filter_sort
+    assert 'hx-include="this"' in filter_sort
+    assert 'hx-sync="this:replace"' in filter_sort
+    assert 'hx-target="#${2:results}"' in filter_sort
+    assert 'hx-push-url="true"' in filter_sort
 
     validation = "\n".join(catalog["htmx-form-validation"]["body"])
     assert 'hx-target="this"' in validation
