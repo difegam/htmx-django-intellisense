@@ -5,6 +5,8 @@ The project follows [Keep a Changelog](https://keepachangelog.com/) conventions 
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-09
+
 ### Added
 
 - Eight Django-first HTMX pattern snippets: `htmx-pagination`, `htmx-load-more`, `htmx-filter-sort`, `htmx-autosave`, `htmx-toggle`, `htmx-soft-delete-undo`, `htmx-field-check`, and `htmx-autocomplete`. All use explicit HTMX 2/4 attributes, CSRF-safe forms, and server-rendered fragments.
@@ -20,14 +22,6 @@ The project follows [Keep a Changelog](https://keepachangelog.com/) conventions 
 - Snippet body authoring now uses external `.html` template files in `snippets/bodies/` with `body_file` metadata, replacing inline `body` arrays in `snippets/django-htmx.source.json`. The generator resolves templates at build time.
 
 - `htmx-search` snippet improved with `hx-sync="this:replace"` to prevent stale responses from overwriting current results during rapid input.
-
-## [0.2.0] - 2026-10-06
-
-### Added
-
-- Resolve snippet template bodies from external sources, enabling IntelliSense to fetch and document custom HTMX snippets beyond the bundled catalog.
-
-### Changed
 
 - Bumped pinned HTMX 2 version from `2.0.10` to `2.0.11` in the offline catalog.
 
