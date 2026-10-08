@@ -359,13 +359,19 @@ Django pagination with fragment replacement and browser history.
     <!-- Add content here. -->
     <nav aria-label="Pagination">
         {% if page_obj.has_previous %}
-            <a href="?page={{ page_obj.previous_page_number }}" hx-get="?page={{ page_obj.previous_page_number }}"
-               hx-target="#results" hx-swap="outerHTML" hx-push-url="true">Previous</a>
+            <a href="?page={{ page_obj.previous_page_number }}"
+               hx-get="?page={{ page_obj.previous_page_number }}"
+               hx-target="#results"
+               hx-swap="outerHTML"
+               hx-push-url="true">Previous</a>
         {% endif %}
         <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
         {% if page_obj.has_next %}
-            <a href="?page={{ page_obj.next_page_number }}" hx-get="?page={{ page_obj.next_page_number }}"
-               hx-target="#results" hx-swap="outerHTML" hx-push-url="true">Next</a>
+            <a href="?page={{ page_obj.next_page_number }}"
+               hx-get="?page={{ page_obj.next_page_number }}"
+               hx-target="#results"
+               hx-swap="outerHTML"
+               hx-push-url="true">Next</a>
         {% endif %}
     </nav>
 </section>
@@ -396,8 +402,10 @@ Explicit Django load-more link with a replaceable sentinel.
 ```django
 {% if page_obj.has_next %}
     <li class="load-more">
-        <a href="?page={{ page_obj.next_page_number }}" hx-get="?page={{ page_obj.next_page_number }}"
-           hx-target="closest li" hx-swap="outerHTML">Load more</a>
+        <a href="?page={{ page_obj.next_page_number }}"
+           hx-get="?page={{ page_obj.next_page_number }}"
+           hx-target="closest li"
+           hx-swap="outerHTML">Load more</a>
     </li>
 {% endif %}
 ```
@@ -425,9 +433,15 @@ URL-backed Django filter and sort form with HTMX updates.
 **Django versions:** 4.2+
 
 ```django
-<form method="get" action="{% url 'list-view' %}" hx-get="{% url 'list-view' %}"
-      hx-include="this" hx-trigger="change, input changed delay:300ms"
-      hx-sync="this:replace" hx-target="#results" hx-swap="outerHTML" hx-push-url="true">
+<form method="get"
+      action="{% url 'list-view' %}"
+      hx-get="{% url 'list-view' %}"
+      hx-include="this"
+      hx-trigger="change, input changed delay:300ms"
+      hx-sync="this:replace"
+      hx-target="#results"
+      hx-swap="outerHTML"
+      hx-push-url="true">
     <input type="search" name="q" value="{{ request.GET.q }}">
     <!-- Add content here. -->
     <button type="submit">Apply</button>
