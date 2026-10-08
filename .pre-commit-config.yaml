@@ -37,6 +37,15 @@ repos:
         name: format Python
         args: [--config=tools/pyproject.toml]
 
+  - repo: https://github.com/djlint/djLint
+    rev: v1.36.4
+    hooks:
+      - id: djlint-reformat-django
+        files: ^snippets/bodies/.*\.html$
+      - id: djlint-django
+        files: ^snippets/bodies/.*\.html$
+        args: [--ignore, H021]
+
   - repo: https://github.com/hukkin/mdformat
     rev: 1.0.0
     hooks:

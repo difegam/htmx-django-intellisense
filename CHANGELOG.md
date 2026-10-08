@@ -5,6 +5,16 @@ The project follows [Keep a Changelog](https://keepachangelog.com/) conventions 
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-06
+
+### Added
+
+- Resolve snippet template bodies from external sources, enabling IntelliSense to fetch and document custom HTMX snippets beyond the bundled catalog.
+
+### Changed
+
+- Bumped pinned HTMX 2 version from `2.0.10` to `2.0.11` in the offline catalog.
+
 ## [0.1.1] - 2026-09-13
 
 ### Fixed

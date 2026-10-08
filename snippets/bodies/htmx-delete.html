@@ -1,0 +1,9 @@
+<form method="post"
+      action="{% url '${1:delete-view}' ${2:object.pk} %}"
+      hx-post="{% url '${1:delete-view}' ${2:object.pk} %}"
+      hx-confirm="${3:Are you sure?}"
+      hx-target="${4:closest .item}"
+      hx-swap="outerHTML">
+    {% csrf_token %}
+    <button type="submit">${5:Delete}</button>
+</form>

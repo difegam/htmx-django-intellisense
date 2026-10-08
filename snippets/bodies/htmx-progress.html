@@ -1,0 +1,9 @@
+<div hx-get="{% url '${1:progress-view}' ${2:task.pk} %}"
+     hx-trigger="every ${3:1s}"
+     hx-target="this"
+     hx-swap="outerHTML"
+     role="status"
+     aria-live="polite">
+    <label for="${4:task-progress}">${5:Progress}</label>
+    <progress id="${4:task-progress}" value="{{ task.progress }}" max="100">{{ task.progress }}%</progress>
+</div>

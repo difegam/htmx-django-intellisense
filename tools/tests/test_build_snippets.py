@@ -89,6 +89,165 @@ def _entry(**overrides):
     return entry
 
 
+def _source_entry(**overrides):
+    entry = {
+        "name": "Safe GET",
+        "prefix": "htmx-safe-get",
+        "category": "Requests and forms",
+        "classification": "common",
+        "description": "Load safe content",
+        "body_file": "bodies/safe-get.html",
+        "usage": "The view returns HTML.",
+    }
+    entry.update(overrides)
+    return entry
+
+
+def _write_source_catalog(tmp_path: Path, entries: list[dict]) -> tuple[Path, Path]:
+    source_path = tmp_path / "django-htmx.source.json"
+    bodies_dir = tmp_path / "bodies"
+    bodies_dir.mkdir()
+    source_path.write_text(json.dumps(entries), encoding="utf-8")
+    return source_path, bodies_dir
+
+
+def test_load_catalog_resolves_body_files_and_preserves_blank_lines(tmp_path: Path) -> None:
+    module = _load_build_snippets_module()
+    source_path, bodies_dir = _write_source_catalog(tmp_path, [_source_entry()])
+    (bodies_dir / "safe-get.html").write_text(
+        "<button>Load</button>\n\n</button>\n", encoding="utf-8"
+    )
+
+    assert module.load_catalog(source_path) == [
+        {
+            **_entry(),
+            "body": ["<button>Load</button>", "", "</button>"],
+        }
+    ]
+
+
+def test_load_catalog_removes_only_one_final_newline(tmp_path: Path) -> None:
+    module = _load_build_snippets_module()
+    source_path, bodies_dir = _write_source_catalog(tmp_path, [_source_entry()])
+    (bodies_dir / "safe-get.html").write_text("<button>Load</button>\n\n\n", encoding="utf-8")
+
+    assert module.load_catalog(source_path)[0]["body"] == ["<button>Load</button>", "", ""]
+
+
+def test_load_catalog_requires_body_file_and_rejects_inline_bodies(tmp_path: Path) -> None:
+    module = _load_build_snippets_module()
+    source_path, _ = _write_source_catalog(tmp_path, [_source_entry(body_file=None)])
+
+    with pytest.raises(ValueError, match="body_file"):
+        module.load_catalog(source_path)
+
+    source_path.write_text(
+        json.dumps([_source_entry(body=["<button>Load</button>"])]), encoding="utf-8"
+    )
+
+    with pytest.raises(ValueError, match="body"):
+        module.load_catalog(source_path)
+
+
+@pytest.mark.parametrize(
+    "body_file",
+    [
+        "../outside.html",
+        "absolute",
+        "bodies/safe-get.txt",
+        "bodies/missing.html",
+    ],
+)
+def test_load_catalog_rejects_unsafe_or_missing_body_files(tmp_path: Path, body_file: str) -> None:
+    module = _load_build_snippets_module()
+    if body_file == "absolute":
+        body_file = str(tmp_path / "outside.html")
+    source_path, bodies_dir = _write_source_catalog(tmp_path, [_source_entry(body_file=body_file)])
+    (bodies_dir / "safe-get.txt").write_text("<button>Load</button>\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="htmx-safe-get"):
+        module.load_catalog(source_path)
+
+
+def test_load_catalog_rejects_absolute_body_paths_inside_bodies(tmp_path: Path) -> None:
+    module = _load_build_snippets_module()
+    source_path, bodies_dir = _write_source_catalog(tmp_path, [_source_entry()])
+    body_path = bodies_dir / "safe-get.html"
+    body_path.write_text("<button>Load</button>\n", encoding="utf-8")
+    source_path.write_text(
+        json.dumps([_source_entry(body_file=str(body_path))]),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="htmx-safe-get"):
+        module.load_catalog(source_path)
+
+
+def test_load_catalog_rejects_empty_unreadable_duplicate_and_orphaned_body_files(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    module = _load_build_snippets_module()
+    source_path, bodies_dir = _write_source_catalog(tmp_path, [_source_entry()])
+    body_path = bodies_dir / "safe-get.html"
+    body_path.write_text(" \n\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="htmx-safe-get"):
+        module.load_catalog(source_path)
+
+    body_path.write_text("<button>Load</button>\n", encoding="utf-8")
+    original_read_text = Path.read_text
+
+    def unreadable_read_text(path: Path, *args, **kwargs):
+        if path == body_path:
+            raise OSError("permission denied")
+        return original_read_text(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", unreadable_read_text)
+    with pytest.raises(ValueError, match="permission denied"):
+        module.load_catalog(source_path)
+    monkeypatch.undo()
+
+    source_path.write_text(
+        json.dumps(
+            [
+                _source_entry(),
+                _source_entry(
+                    name="Second",
+                    prefix="htmx-second",
+                    body_file="bodies/./safe-get.html",
+                ),
+            ]
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match=re.escape("safe-get.html")):
+        module.load_catalog(source_path)
+
+    source_path.write_text(json.dumps([_source_entry()]), encoding="utf-8")
+    (bodies_dir / "orphan.html").write_text("<p>Orphan</p>\n", encoding="utf-8")
+    with pytest.raises(ValueError, match=re.escape("orphan.html")):
+        module.load_catalog(source_path)
+
+
+def test_source_catalog_uses_body_files_that_match_runtime_bodies() -> None:
+    source_catalog = json.loads(
+        (ROOT / "snippets" / "django-htmx.source.json").read_text(encoding="utf-8")
+    )
+    runtime_catalog = json.loads(
+        (ROOT / "snippets" / "django-htmx.json").read_text(encoding="utf-8")
+    )
+
+    assert [entry["prefix"] for entry in source_catalog] == EXPECTED_PREFIXES
+    assert all("body_file" in entry and "body" not in entry for entry in source_catalog)
+    assert len({entry["body_file"] for entry in source_catalog}) == len(source_catalog)
+    for entry in source_catalog:
+        body_file = ROOT / "snippets" / entry["body_file"]
+        assert (
+            body_file.read_text(encoding="utf-8").removesuffix("\n").split("\n")
+            == runtime_catalog[entry["name"]]["body"]
+        )
+
+
 def test_committed_catalog_has_exact_expected_prefixes() -> None:
     module = _load_build_snippets_module()
     catalog = module.load_catalog()
@@ -314,7 +473,8 @@ def test_portable_pattern_regressions() -> None:
         "hx-select",
         "hx-swap",
         "hx-push-url",
-    } <= set(re.findall(r"\b(hx-[a-z0-9-]+)=", "\n".join(boost[1:4])))
+    } <= set(re.findall(r"\b(hx-[a-z0-9-]+)=", "\n".join(boost)))
+    assert re.search(r"<a\b[^>]*>\$\{4:Home}</a>", "\n".join(boost), re.S)
 
     upload = "\n".join(catalog["htmx-file-upload"]["body"])
     assert 'method="post"' in upload
@@ -384,6 +544,8 @@ def test_editing_recipes_target_the_container_without_implicit_inheritance() -> 
         ("htmx-click-to-edit", "closest article"),
         ("htmx-table-row", "closest tr"),
     ):
-        button = next(line for line in entries[prefix]["body"] if "hx-get=" in line)
-        assert f'hx-target="{target}"' in button
-        assert 'hx-swap="outerHTML"' in button
+        markup = "\n".join(entries[prefix]["body"])
+        button = re.search(r"<button\b(?P<attributes>[^>]*)>", markup, re.S)
+        assert button is not None
+        assert f'hx-target="{target}"' in button["attributes"]
+        assert 'hx-swap="outerHTML"' in button["attributes"]

@@ -1,0 +1,7 @@
+<article>
+    <h2>{{ object }}</h2>
+    <button type="button"
+            hx-target="closest article"
+            hx-swap="outerHTML"
+            hx-get="{% url '${1:edit-view}' ${2:object.pk} %}">${3:Edit}</button>
+</article>

@@ -41,6 +41,9 @@ check-pins:
 verify:
     npm run lint
     npm run format:check
+    uv run --project tools prek run djlint-reformat-django --all-files
+    git diff --exit-code -- snippets/bodies
+    uv run --project tools prek run djlint-django --all-files
     npm run check-types
     npm run knip
     uv run --project tools ruff check tools

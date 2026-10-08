@@ -1,0 +1,11 @@
+<nav aria-label="${1:Primary}">
+    <a href="{% url '${2:home}' %}"
+       hx-boost="true"
+       hx-target="#${3:main-content}"
+       hx-select="#${3:main-content}"
+       hx-swap="outerHTML"
+       hx-push-url="true">${4:Home}</a>
+    $0
+</nav>
+<main id="${3:main-content}" tabindex="-1">
+</main>

@@ -9,10 +9,10 @@ just init
 ```
 
 `just init` installs the Node and Python toolchains and the prek git hooks
-(`pre-commit` and `pre-push`). The hooks run Ruff, Prettier, mdformat, Pyrefly, ESLint,
-and the Python tests on commit, and `check-types`, TypeScript unit tests, and `knip` on
-push, so most regressions surface before you open a pull request. If you skip this
-step, your clone has no local hooks and those regressions surface later in CI instead.
+(`pre-commit` and `pre-push`). The hooks run Ruff, djLint, Prettier, mdformat, Pyrefly,
+ESLint, and the Python tests on commit, and `check-types`, TypeScript unit tests, and
+`knip` on push, so most regressions surface before you open a pull request. If you skip
+this step, your clone has no local hooks and those regressions surface later in CI instead.
 
 The manual equivalent, if you are not using `just`:
 
@@ -31,7 +31,8 @@ uv run --project tools prek install --hook-type pre-commit --hook-type pre-push
 | Resolution rules                           | `src/catalog.ts`                                                        |
 | Validation behavior                        | `src/diagnostics.ts`                                                    |
 | VS Code provider behavior                  | `src/extension.ts`                                                      |
-| Django snippet                             | `snippets/django-htmx.source.json`                                      |
+| Django snippet metadata                    | `snippets/django-htmx.source.json`                                      |
+| Django snippet body                        | `snippets/bodies/<prefix>.html`                                         |
 
 Add or update the focused Node or Python test that fails before the change. Regenerate the HTMX
 catalog only when its generator inputs or metadata change. Run `npm run build-snippets` after a
@@ -39,9 +40,9 @@ snippet source change; it updates the packaged JSON and reference page together.
 
 ## Add a snippet
 
-Edit `snippets/django-htmx.source.json`, not the generated
-`snippets/django-htmx.json` or `docs/reference/snippets.md` files. Each source
-entry has these fields:
+Edit `snippets/django-htmx.source.json` and the referenced body file under
+`snippets/bodies/`, not the generated `snippets/django-htmx.json` or
+`docs/reference/snippets.md` files. Each metadata entry has these fields:
 
 ```json
 {
@@ -50,9 +51,7 @@ entry has these fields:
   "category": "Requests and forms",
   "classification": "common",
   "description": "Refresh a Django fragment with HTMX",
-  "body": [
-    "<button type=\"button\" hx-get=\"{% url '${1:refresh-view}' %}\" hx-target=\"#${2:content}\" hx-swap=\"${3:innerHTML}\">${4:Refresh}</button>"
-  ],
+  "body_file": "bodies/htmx-refresh.html",
   "usage": "The view returns the fragment that replaces the selected target."
 }
 ```
@@ -66,9 +65,9 @@ The validator requires:
 | `category`                | One of `Requests and forms`, `Loading and navigation`, `Editing and UI`, `Server responses`, or `Django partials`. Keep entries in that order.         |
 | `classification`          | One of `common`, `curated`, or `django-6`. Entries in `Django partials` must use `django-6`; other entries must not.                                   |
 | `description` and `usage` | Non-empty strings. Use `description` for the catalog summary and `usage` for the expected view or template response.                                   |
-| `body`                    | A non-empty array of non-empty strings containing the Django/HTML template to insert.                                                                  |
+| `body_file`               | A required relative path to a non-empty `.html` file below `snippets/bodies/`. The generator reads it as the Django/HTML template to insert.           |
 
-Use VS Code snippet placeholders in the body: `${1:default}` creates an editable
+Use VS Code snippet placeholders in the body file: `${1:default}` creates an editable
 tab stop with a default value, `$0` marks the final cursor position, and repeated
 numbers reuse the same value. Keep the markup compatible with both supported HTMX
 catalogs; the snippet test suite rejects deprecated or version-specific attributes.
@@ -79,7 +78,15 @@ or `hx-patch` control inside a form with `method="post"`, a matching `action` an
 The validator rejects scripts, inline event handlers, `hx-on`, JavaScript URLs or
 expressions, remote executable embeds, `hx-ext`, SSE, and WebSocket attributes.
 
-After editing the source:
+After editing source metadata or a body file:
+
+1. Format and lint the body file with djLint. Prettier deliberately ignores these mixed
+    Django and VS Code snippet templates.
+
+    ```bash
+    uv run --project tools prek run djlint-reformat-django --files snippets/bodies/<prefix>.html
+    uv run --project tools prek run djlint-django --files snippets/bodies/<prefix>.html
+    ```
 
 1. Run the generator:
 

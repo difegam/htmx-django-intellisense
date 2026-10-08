@@ -1,0 +1,29 @@
+<form method="post"
+      action="{% url '${1:bulk-view}' %}"
+      hx-post="{% url '${1:bulk-view}' %}"
+      hx-target="#${2:items-body}"
+      hx-swap="outerHTML">
+    {% csrf_token %}
+    <table>
+        <thead>
+            <tr>
+                <th scope="col">Select</th>
+                <th scope="col">Item</th>
+            </tr>
+        </thead>
+        <tbody id="${2:items-body}">
+            {% for object in objects %}
+                <tr>
+                    <td>
+                        <input type="checkbox"
+                               name="selected"
+                               value="{{ object.pk }}"
+                               aria-label="Select {{ object }}">
+                    </td>
+                    <td>{{ object }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <button type="submit">${3:Apply to selected}</button>
+</form>

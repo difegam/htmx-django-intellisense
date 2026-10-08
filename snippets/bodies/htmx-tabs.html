@@ -1,0 +1,17 @@
+<section id="${1:tabs}" aria-label="${2:Sections}">
+    <nav role="tablist">
+        <a id="${1:tabs}-${3:overview}"
+           role="tab"
+           aria-selected="true"
+           aria-controls="${1:tabs}-panel"
+           href="{% url '${4:tabs-view}' '${3:overview}' %}"
+           hx-get="{% url '${4:tabs-view}' '${3:overview}' %}"
+           hx-target="#${1:tabs}"
+           hx-swap="outerHTML"
+           hx-push-url="true">${5:Overview}</a>
+        $0
+    </nav>
+    <div id="${1:tabs}-panel"
+         role="tabpanel"
+         aria-labelledby="${1:tabs}-${3:overview}">{{ tab_content }}</div>
+</section>

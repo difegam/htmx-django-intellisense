@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "generatedFrom": {
-    "htmx2": "2.0.10",
+    "htmx2": "2.0.11",
     "htmx4": "4.0.0"
   },
   "attributes": [
@@ -733,6 +733,22 @@
           "insertText": "not ${1:param1,param2}"
         }
       ]
+    },
+    {
+      "name": "hx-partial",
+      "description": "hx-partial is a server-sent swap command. The server wraps content in <hx-partial hx-target=\"...\"> tags in its response; htmx reads the targeting instructions, performs the swap, and discards the envelope \u2014 it is never inserted into the DOM.",
+      "versions": [
+        "2"
+      ],
+      "documentation": {
+        "2": "https://htmx.org/attributes/hx-partial/"
+      },
+      "examples": {
+        "2": "<div>Updated main content</div>\n\n<hx-partial hx-target=\"#notifications\">\n  3 new messages\n</hx-partial>\n\n<hx-partial hx-target=\"#user-status\" hx-swap=\"outerHTML\">\n  <span id=\"user-status\" class=\"online\">Online</span>\n</hx-partial>"
+      },
+      "categories": {
+        "2": "Core"
+      }
     },
     {
       "name": "hx-patch",

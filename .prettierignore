@@ -8,6 +8,7 @@ node_modules/
 # Generated data — owned by the Python tools/, not hand-edited
 htmx.catalog.json
 snippets/django-htmx.json
+snippets/bodies/**
 
 # Rendered docs site
 site/

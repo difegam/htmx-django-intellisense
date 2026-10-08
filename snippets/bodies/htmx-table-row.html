@@ -1,0 +1,9 @@
+<tr id="${1:item}-{{ object.pk }}">
+    <th scope="row">{{ object }}</th>
+    <td>
+        <button type="button"
+                hx-target="closest tr"
+                hx-swap="outerHTML"
+                hx-get="{% url '${2:edit-view}' ${3:object.pk} %}">${4:Edit}</button>
+    </td>
+</tr>
