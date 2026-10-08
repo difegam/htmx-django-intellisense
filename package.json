@@ -122,15 +122,20 @@
     "@typescript-eslint/eslint-plugin": "~8.68.0",
     "@typescript-eslint/parser": "~8.68.0",
     "@vscode/test-electron": "^3.1.0",
-    "@vscode/vsce": "3.9.2",
+    "@vscode/vsce": "4.0.0",
     "esbuild": "^0.28.2",
     "eslint": "^10.9.1",
     "knip": "^6.32.3",
+    "ovsx": "^1.1.1",
     "prettier": "^3.7.1",
-    "typescript": "^5.9.3",
-    "ovsx": "1.1.1"
+    "typescript": "^5.9.3"
   },
   "extensionDependencies": [
     "batisteo.vscode-django"
-  ]
+  ],
+  "overrides": {
+    "ovsx": {
+      "@vscode/vsce": "$@vscode/vsce"
+    }
+  }
 }

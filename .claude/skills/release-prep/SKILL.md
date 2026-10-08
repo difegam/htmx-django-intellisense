@@ -1,9 +1,9 @@
 ---
 name: release-prep
-description: Use when preparing a new release of the extension: reviewing changes since the last release, choosing a version bump, updating the changelog and docs, and running full verification.
+description: Prepare an extension release: version bump, changelog, docs, full verification.
 disable-model-invocation: true
 argument-hint: [major|minor|patch]
-allowed-tools: Bash(git log *) Bash(git diff *) Bash(git tag *) Bash(just verify)
+allowed-tools: Bash(git log *) Bash(git diff *) Bash(git tag *) Bash(just verify) Bash(npm audit) Bash(npx vsce ls *)
 ---
 
 # Release Prep
@@ -12,9 +12,9 @@ Prepare a release per `docs/operations/release.md`. An explicit `$ARGUMENTS` bum
 
 ## Steps
 
-1. **Baseline.** Use the latest tag (`git tag --sort=-v:refname | head -1`); if none, the last `chore: release` commit. Read `git log <base>..HEAD` and the real diff of `src/`, `package.json` `contributes`, `snippets/`, `catalog.py` and `htmx.catalog.json`.
+1. **Baseline.** Use the latest tag (`git tag --sort=-v:refname | head -1`); if none, the last `chore: release` commit. Read `git log <base>..HEAD`, then the real diff of `src/`, `package.json` `contributes`, `snippets/`, `catalog.py` and `htmx.catalog.json`. Done when every changed path in those areas has been read as a diff, not a commit title.
 
-1. **Bump.** State the reasoning and confirm the version with the user before editing.
+1. **Bump.** State the reasoning. Done when the user has confirmed the version.
 
     | Change                                                     | Bump                               |
     | ---------------------------------------------------------- | ---------------------------------- |
@@ -22,18 +22,18 @@ Prepare a release per `docs/operations/release.md`. An explicit `$ARGUMENTS` bum
     | New feature, setting, snippet, or HTMX pin version         | minor                              |
     | Fix, docs-only, HTMX patch pin bump, internal              | patch                              |
 
-1. **Version.** Edit `package.json` `version` only; `tools/pyproject.toml` is tooling and stays. Run `npm install --package-lock-only`, then confirm the `package-lock.json` diff is only the version lines; revert it if it churns.
+1. **Version.** Edit `package.json` `version` only; `tools/pyproject.toml` is tooling and keeps its own version. Run `npm install --package-lock-only`. Done when the `package-lock.json` diff holds only the version lines (revert it if it churns).
 
-1. **Changelog.** Move `[Unreleased]` entries under `## [X.Y.Z] - <today>` (Added/Changed/Fixed/Removed) and leave an empty `[Unreleased]`. Record user-visible behavior only.
+1. **Changelog.** Read the existing `[Unreleased]` first and reuse its entries; add what is missing, as user-visible behavior only. Move them under `## [X.Y.Z] - <today>` (Added/Changed/Fixed/Removed). Done when `[Unreleased]` is empty and every entry sits under the new version.
 
-1. **Docs.** Update the pages the changes touch: `docs/reference/settings.md`, `docs/reference/catalog-and-syntax.md`, `docs/explanation/compatibility.md`, README and install pages. Check every external API or behavior claim (VS Code API, HTMX attributes, Django, vsce/ovsx, zensical) with Context7: `resolve-library-id`, then `query-docs`. Regenerate generated files with `npm run build-data` and `npm run build-snippets`; never hand-edit `htmx.catalog.json`, `snippets/django-htmx.json` or `docs/reference/snippets.md`. If `package.json` `contributes` changed, mirror it in `tools/tests/test_extension_contract.py` and `src/test/suite/index.ts`.
+1. **Docs.** Update the pages the changes touch: `docs/reference/settings.md`, `docs/reference/catalog-and-syntax.md`, `docs/explanation/compatibility.md`, README and install pages. Check every external API or behavior claim (VS Code API, HTMX attributes, Django, vsce/ovsx, zensical) with Context7: `resolve-library-id`, then `query-docs`. Produce `htmx.catalog.json`, `snippets/django-htmx.json` and `docs/reference/snippets.md` with `npm run build-data` and `npm run build-snippets`. If `package.json` `contributes` changed, mirror it in `tools/tests/test_extension_contract.py` and `src/test/suite/index.ts`. Done when every changed behavior maps to an updated page, or is recorded as needing none.
 
-1. **Verify.** Run `just verify` and report failures verbatim. **REQUIRED SUB-SKILL:** superpowers:verification-before-completion.
+1. **Verify.** Run `just verify` and report failures verbatim. **REQUIRED SUB-SKILL:** superpowers:verification-before-completion. Then check what `just verify` misses:
 
-1. **Hand off.** Do not commit, tag, push, or publish unless asked. Print the suggested message `chore: release X.Y.Z` and the tag and release commands from `docs/operations/release.md`.
+    - **Package contents.** Every path in `npx vsce ls --tree` is something the extension loads at runtime; anything else gets an entry in `.vscodeignore`.
+    - **Audit.** `npm audit` reports 0 findings. `ovsx` can keep a nested old `@vscode/vsce`: check `npm ls @vscode/vsce`, keep the `overrides` entry for `ovsx`, and re-resolve with `npm install -D ovsx@<version> --prefer-online`. Report any remainder to the user.
+    - **Environment.** Report EBADENGINE warnings and network-only failures (`check-pins`, VS Code download) as environment findings, separate from repo results.
 
-## Common mistakes
+    Done when `just verify` and all three checks are green.
 
-- Bumping `tools/pyproject.toml`.
-- Hand-editing generated files instead of regenerating.
-- Tag not matching `package.json` (the publish workflow rejects it).
+1. **Hand off.** Commit, tag, push and publish only when the user asks. Print the suggested message `chore: release X.Y.Z` and the tag and release commands from `docs/operations/release.md`; the tag version equals the `package.json` version, which the publish workflow checks. Done when those are printed.
