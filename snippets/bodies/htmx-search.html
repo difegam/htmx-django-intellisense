@@ -2,4 +2,5 @@
        name="${1:q}"
        hx-get="{% url '${2:search-view}' %}"
        hx-trigger="input changed delay:${3:300ms}, search"
+       hx-sync="this:replace"
        hx-target="${4:#results}">

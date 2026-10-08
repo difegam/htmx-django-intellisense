@@ -1,0 +1,11 @@
+<article id="${1:item}-{{ object.pk }}">
+    $0
+    <form method="post"
+          action="{% url '${2:toggle-view}' ${3:object.pk} %}"
+          hx-post="{% url '${2:toggle-view}' ${3:object.pk} %}"
+          hx-target="closest article"
+          hx-swap="outerHTML">
+        {% csrf_token %}
+        <button type="submit" aria-pressed="{{ object.enabled|yesno:'true,false' }}">${4:Toggle}</button>
+    </form>
+</article>

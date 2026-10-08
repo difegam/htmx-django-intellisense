@@ -67,6 +67,13 @@ are labeled HTMX 4. Static VS Code snippets are available in every version
 mode. `<hx-partial>` is an HTMX response element, separate from Django's
 `{% partialdef %}` template tags.
 
+The Django-first recipes (`htmx-pagination`, `htmx-load-more`,
+`htmx-autosave`, `htmx-toggle`, `htmx-filter-sort`, `htmx-soft-delete-undo`,
+`htmx-field-check`, and `htmx-autocomplete`) stay within the shared HTMX 2/4
+core. They use explicit targets and swaps, matching native form actions, and
+HTTP 200 invalid-form responses. The library intentionally excludes recipes
+that require scripts, extension declarations, SSE, or WebSockets.
+
 ### Improvements evaluated
 
 Included in this release: mode-correct modifiers and event examples, config

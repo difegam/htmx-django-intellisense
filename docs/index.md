@@ -25,13 +25,14 @@ The installed extension runs locally in VS Code. It reads the committed catalog 
 
 ## Start here
 
-| Need                                        | Read                                                  |
-| ------------------------------------------- | ----------------------------------------------------- |
-| Install and verify the extension            | [Installation](start-here/installation.md)            |
-| Create a first HTMX-enabled Django template | [First template](start-here/first-template.md)        |
-| Understand version modes and scope          | [Compatibility](explanation/compatibility.md)         |
-| Configure editor behavior                   | [Configuration](how-to/configuration.md)              |
-| Contribute or package a change              | [First contribution](tutorials/first-contribution.md) |
+| Need                                        | Read                                                           |
+| ------------------------------------------- | -------------------------------------------------------------- |
+| Install and verify the extension            | [Installation](start-here/installation.md)                     |
+| Create a first HTMX-enabled Django template | [First template](start-here/first-template.md)                 |
+| Understand version modes and scope          | [Compatibility](explanation/compatibility.md)                  |
+| Apply Django-first HTMX patterns            | [Django Fragment Patterns](how-to/django-fragment-patterns.md) |
+| Configure editor behavior                   | [Configuration](how-to/configuration.md)                       |
+| Contribute or package a change              | [First contribution](tutorials/first-contribution.md)          |
 
 ## Documentation map
 

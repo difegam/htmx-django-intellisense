@@ -1,0 +1,8 @@
+{% if page_obj.has_next %}
+    <li class="${1:load-more}">
+        <a href="?page={{ page_obj.next_page_number }}"
+           hx-get="?page={{ page_obj.next_page_number }}"
+           hx-target="closest li"
+           hx-swap="outerHTML">${2:Load more}</a>
+    </li>
+{% endif %}

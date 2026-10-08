@@ -12,10 +12,18 @@ from htmx_django_intellisense import snippets as _snippets_module
 
 ROOT = _snippets_module.ROOT
 EXPECTED_PREFIXES = [
+    "htmx-autosave",
+    "htmx-toggle",
+    "htmx-soft-delete-undo",
+    "htmx-field-check",
+    "htmx-autocomplete",
     "htmx-get",
     "htmx-post",
     "htmx-delete",
     "htmx-search",
+    "htmx-pagination",
+    "htmx-load-more",
+    "htmx-filter-sort",
     "htmx-form-validation",
     "htmx-file-upload",
     "htmx-bulk-actions",
@@ -45,6 +53,8 @@ EXPECTED_CLASSIFICATIONS = {
         "htmx-post",
         "htmx-delete",
         "htmx-search",
+        "htmx-pagination",
+        "htmx-load-more",
         "htmx-form-validation",
         "htmx-infinite",
         "htmx-lazy",
@@ -53,6 +63,12 @@ EXPECTED_CLASSIFICATIONS = {
     },
     "curated": {
         "htmx-status-form",
+        "htmx-filter-sort",
+        "htmx-autosave",
+        "htmx-toggle",
+        "htmx-soft-delete-undo",
+        "htmx-field-check",
+        "htmx-autocomplete",
         "htmx-morph",
         "htmx-partial-response",
         "htmx-file-upload",
@@ -84,6 +100,14 @@ def _entry(**overrides):
         "description": "Load safe content",
         "body": ["<button hx-get=\"{% url 'safe-view' %}\">Load</button>"],
         "usage": "The view returns HTML.",
+        "htmx_versions": ["2", "4"],
+        "django_versions": ["4.2+"],
+        "request_kind": "none",
+        "context_variables": [],
+        "response_contract": "",
+        "security_notes": [],
+        "accessibility_notes": [],
+        "related_snippets": [],
     }
     entry.update(overrides)
     return entry
@@ -304,6 +328,49 @@ def test_catalog_schema_is_validated(overrides: dict, message: str) -> None:
         module.validate_catalog([_entry(**overrides)])
 
 
+def test_snippet_metadata_is_validated_and_rendered() -> None:
+    module = _load_build_snippets_module()
+    entry = _entry(
+        htmx_versions=["2", "4"],
+        django_versions=["4.2+"],
+        request_kind="GET",
+        context_variables=["page_obj"],
+        response_contract="Return the results root.",
+        security_notes=["GET requests are side-effect free."],
+        accessibility_notes=["Keep the native link fallback."],
+        related_snippets=["htmx-second"],
+    )
+    related = _entry(name="Second", prefix="htmx-second")
+
+    module.validate_catalog([entry, related])
+    assert set(json.loads(module.render_snippets([entry]))["Safe GET"]) == {
+        "prefix",
+        "description",
+        "body",
+    }
+
+    docs = module.render_docs([entry, related])
+    assert "**HTMX versions:** 2, 4" in docs
+    assert "**Django versions:** 4.2+" in docs
+    assert "**Request kind:** GET" in docs
+    assert "page_obj" in docs
+    assert "Return the results root." in docs
+    assert "GET requests are side-effect free." in docs
+    assert "Keep the native link fallback." in docs
+    assert "[`htmx-second`](#htmx-second)" in docs
+
+    with pytest.raises(ValueError, match="unknown HTMX version"):
+        module.validate_catalog([_entry(htmx_versions=["3"])])
+    with pytest.raises(ValueError, match="django_versions"):
+        module.validate_catalog([_entry(django_versions=[""])])
+    with pytest.raises(ValueError, match="Input should be"):
+        module.validate_catalog([_entry(request_kind="PATCH")])
+    with pytest.raises(ValueError, match="unknown related snippet"):
+        module.validate_catalog([_entry(related_snippets=["htmx-missing"])])
+    with pytest.raises(ValueError, match="may not relate to itself"):
+        module.validate_catalog([_entry(related_snippets=["htmx-safe-get"])])
+
+
 def test_malformed_json_and_snippet_placeholders_are_rejected(tmp_path: Path) -> None:
     module = _load_build_snippets_module()
     source = tmp_path / "broken.json"
@@ -454,6 +521,54 @@ def test_portable_pattern_regressions() -> None:
     search = "\n".join(catalog["htmx-search"]["body"])
     assert "input changed delay:" in search
     assert ", search" in search
+    assert 'hx-sync="this:replace"' in search
+
+    pagination = "\n".join(catalog["htmx-pagination"]["body"])
+    assert "href=" in pagination
+    assert "hx-get=" in pagination
+    assert 'hx-target="#${1:results}"' in pagination
+    assert 'hx-swap="outerHTML"' in pagination
+    assert 'hx-push-url="true"' in pagination
+
+    load_more = "\n".join(catalog["htmx-load-more"]["body"])
+    assert "href=" in load_more
+    assert 'hx-target="closest li"' in load_more
+    assert 'hx-swap="outerHTML"' in load_more
+
+    filter_sort = "\n".join(catalog["htmx-filter-sort"]["body"])
+    assert 'method="get"' in filter_sort
+    assert "action=" in filter_sort
+    assert "hx-get=" in filter_sort
+    assert 'hx-include="this"' in filter_sort
+    assert 'hx-sync="this:replace"' in filter_sort
+    assert 'hx-target="#${2:results}"' in filter_sort
+    assert 'hx-push-url="true"' in filter_sort
+
+    autosave = "\n".join(catalog["htmx-autosave"]["body"])
+    assert 'method="post"' in autosave
+    assert "hx-post=" in autosave
+    assert "{% csrf_token %}" in autosave
+    assert "input changed delay:" in autosave
+    assert 'hx-sync="this:replace"' in autosave
+    assert 'aria-live="polite"' in autosave
+
+    for prefix in ("htmx-toggle", "htmx-soft-delete-undo"):
+        body = "\n".join(catalog[prefix]["body"])
+        assert 'method="post"' in body
+        assert "{% csrf_token %}" in body
+        assert 'hx-target="closest article"' in body
+        assert 'hx-swap="outerHTML"' in body
+
+    field_check = "\n".join(catalog["htmx-field-check"]["body"])
+    assert "hx-get=" in field_check
+    assert "hx-post=" not in field_check
+    assert 'hx-sync="this:replace"' in field_check
+    assert 'aria-live="polite"' in field_check
+
+    autocomplete = "\n".join(catalog["htmx-autocomplete"]["body"])
+    assert "hx-get=" in autocomplete
+    assert 'hx-sync="this:replace"' in autocomplete
+    assert "<datalist" in autocomplete
 
     validation = "\n".join(catalog["htmx-form-validation"]["body"])
     assert 'hx-target="this"' in validation
@@ -499,6 +614,29 @@ def test_core_django_contracts_are_portable() -> None:
     )
     assert "HX-Trigger-After-Swap" in contracts
     assert "intentionally excluded" in contracts
+
+    fragments = (ROOT / "docs" / "how-to" / "django-fragment-patterns.md").read_text(
+        encoding="utf-8"
+    )
+    assert all(
+        prefix in fragments
+        for prefix in (
+            "htmx-pagination",
+            "htmx-autosave",
+            "htmx-toggle",
+            "htmx-soft-delete-undo",
+            "htmx-field-check",
+            "htmx-autocomplete",
+        )
+    )
+    assert 'hx-include="this"' in fragments
+
+    boundaries = (ROOT / "docs" / "explanation" / "hypermedia-patterns.md").read_text(
+        encoding="utf-8"
+    )
+    assert "HTTP 200" in boundaries
+    assert "SSE" in boundaries
+    assert "WebSockets" in boundaries
 
 
 def test_check_mode_reports_stale_files_without_writing(tmp_path: Path) -> None:

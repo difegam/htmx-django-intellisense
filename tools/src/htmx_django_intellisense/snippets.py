@@ -213,6 +213,10 @@ def render_docs(catalog: list[dict[str, Any]]) -> str:
                     "",
                     f"**Classification:** {CLASSIFICATIONS[entry['classification']]}",
                     "",
+                    f"**HTMX versions:** {', '.join(entry.get('htmx_versions', ['2', '4']))}",
+                    "",
+                    f"**Django versions:** {', '.join(entry.get('django_versions', ['4.2+']))}",
+                    "",
                     "```django",
                     snippet_preview(entry["body"]),
                     "```",
@@ -220,6 +224,20 @@ def render_docs(catalog: list[dict[str, Any]]) -> str:
                     f"**Endpoint or context:** {entry['usage']}",
                 )
             )
+            if entry.get("request_kind", "none") != "none":
+                lines.extend(("", f"**Request kind:** {entry['request_kind']}"))
+            for label, field in (
+                ("Context variables", "context_variables"),
+                ("Security notes", "security_notes"),
+                ("Accessibility notes", "accessibility_notes"),
+            ):
+                if values := entry.get(field, []):
+                    lines.extend(("", f"**{label}:** {', '.join(values)}"))
+            if response_contract := entry.get("response_contract", ""):
+                lines.extend(("", f"**Response contract:** {response_contract}"))
+            if related := entry.get("related_snippets", []):
+                links = ", ".join(f"[`{prefix}`](#{prefix})" for prefix in related)
+                lines.extend(("", f"**Related snippets:** {links}"))
 
     return "\n".join(lines) + "\n"
 

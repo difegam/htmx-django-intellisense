@@ -14,10 +14,18 @@ matching view and response examples.
 
 | Prefix | Classification | Description |
 | --- | --- | --- |
+| `htmx-autosave` | Curated recipe | CSRF-safe debounced Django autosave form |
+| `htmx-toggle` | Curated recipe | CSRF-safe server-authoritative boolean toggle |
+| `htmx-soft-delete-undo` | Curated recipe | CSRF-safe soft delete that returns a server-authorized undo state |
+| `htmx-field-check` | Curated recipe | Debounced side-effect-free Django field availability check |
+| `htmx-autocomplete` | Curated recipe | Debounced Django autocomplete using a native datalist |
 | `htmx-get` | Common | Django URL-backed HTMX GET button |
 | `htmx-post` | Common | CSRF-safe Django form submitted through HTMX |
 | `htmx-delete` | Common | CSRF-safe Django delete form submitted through POST |
 | `htmx-search` | Common | Debounced Django HTMX search input |
+| `htmx-pagination` | Common | Django pagination with fragment replacement and browser history |
+| `htmx-load-more` | Common | Explicit Django load-more link with a replaceable sentinel |
+| `htmx-filter-sort` | Curated recipe | URL-backed Django filter and sort form with HTMX updates |
 | `htmx-form-validation` | Common | Django form replaced with server-rendered validation state |
 | `htmx-file-upload` | Curated recipe | CSRF-safe multipart file upload with a status target |
 | `htmx-bulk-actions` | Curated recipe | CSRF-safe bulk action form for Django objects |
@@ -43,11 +51,211 @@ matching view and response examples.
 
 ## Requests and forms
 
+### `htmx-autosave`
+
+CSRF-safe debounced Django autosave form.
+
+**Classification:** Curated recipe
+
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
+
+```django
+<form method="post"
+      action="{% url 'autosave-view' object.pk %}"
+      hx-post="{% url 'autosave-view' object.pk %}"
+      hx-trigger="input changed delay:750ms"
+      hx-sync="this:replace"
+      hx-target="#save-status"
+      hx-swap="outerHTML">
+    {% csrf_token %}
+    <!-- Add content here. -->
+    <button type="submit">Save draft</button>
+    <output id="save-status" aria-live="polite">Not saved yet</output>
+</form>
+```
+
+**Endpoint or context:** The POST view validates and saves the draft, then returns the replacement save-status element.
+
+**Request kind:** POST
+
+**Context variables:** form, object
+
+**Security notes:** Keep the CSRF token and enforce authorization in the view.
+
+**Accessibility notes:** Use the live output for save state announcements.
+
+**Response contract:** Return a server-confirmed live save-status element.
+
+**Related snippets:** [`htmx-form-validation`](#htmx-form-validation), [`htmx-search`](#htmx-search)
+
+### `htmx-toggle`
+
+CSRF-safe server-authoritative boolean toggle.
+
+**Classification:** Curated recipe
+
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
+
+```django
+<article id="item-{{ object.pk }}">
+    <!-- Add content here. -->
+    <form method="post"
+          action="{% url 'toggle-view' object.pk %}"
+          hx-post="{% url 'toggle-view' object.pk %}"
+          hx-target="closest article"
+          hx-swap="outerHTML">
+        {% csrf_token %}
+        <button type="submit" aria-pressed="{{ object.enabled|yesno:'true,false' }}">Toggle</button>
+    </form>
+</article>
+```
+
+**Endpoint or context:** The POST view changes the server state and returns the complete article with its new state.
+
+**Request kind:** POST
+
+**Context variables:** object
+
+**Security notes:** Authorize the state change in the Django view.
+
+**Accessibility notes:** Keep aria-pressed synchronized with server state.
+
+**Response contract:** Return the same article root with the canonical boolean state.
+
+**Related snippets:** [`htmx-soft-delete-undo`](#htmx-soft-delete-undo)
+
+### `htmx-soft-delete-undo`
+
+CSRF-safe soft delete that returns a server-authorized undo state.
+
+**Classification:** Curated recipe
+
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
+
+```django
+<article id="item-{{ object.pk }}">
+    {% if object.deleted %}
+        <p role="status">Deleted</p>
+        <form method="post"
+              action="{% url 'undo-view' object.pk %}"
+              hx-post="{% url 'undo-view' object.pk %}"
+              hx-target="closest article"
+              hx-swap="outerHTML">
+            {% csrf_token %}
+            <button type="submit">Undo</button>
+        </form>
+    {% else %}
+        <!-- Add content here. -->
+        <form method="post"
+              action="{% url 'delete-view' object.pk %}"
+              hx-post="{% url 'delete-view' object.pk %}"
+              hx-confirm="Delete this item?"
+              hx-target="closest article"
+              hx-swap="outerHTML">
+            {% csrf_token %}
+            <button type="submit">Delete</button>
+        </form>
+    {% endif %}
+</article>
+```
+
+**Endpoint or context:** The delete view marks the object deleted and the undo view reverses that server state; both return the article root.
+
+**Request kind:** POST
+
+**Context variables:** object
+
+**Security notes:** Use authorization and a server-side undo policy.
+
+**Accessibility notes:** Expose the deleted state through a status message.
+
+**Response contract:** Return the canonical article or undo tombstone after each state transition.
+
+**Related snippets:** [`htmx-delete`](#htmx-delete), [`htmx-toggle`](#htmx-toggle)
+
+### `htmx-field-check`
+
+Debounced side-effect-free Django field availability check.
+
+**Classification:** Curated recipe
+
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
+
+```django
+<input id="field"
+       name="value"
+       hx-get="{% url 'check-view' %}"
+       hx-trigger="input changed delay:400ms"
+       hx-sync="this:replace"
+       hx-target="#field-status"
+       hx-swap="outerHTML">
+<span id="field-status" aria-live="polite"></span>
+```
+
+**Endpoint or context:** The GET view checks the value without changing state and returns a replacement field-status element.
+
+**Request kind:** GET
+
+**Context variables:** field value
+
+**Accessibility notes:** Announce availability through the live status element.
+
+**Response contract:** Return a bounded status fragment and keep the endpoint side-effect-free.
+
+**Related snippets:** [`htmx-form-validation`](#htmx-form-validation), [`htmx-autocomplete`](#htmx-autocomplete)
+
+### `htmx-autocomplete`
+
+Debounced Django autocomplete using a native datalist.
+
+**Classification:** Curated recipe
+
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
+
+```django
+<input id="search"
+       type="search"
+       name="q"
+       list="suggestions"
+       hx-get="{% url 'autocomplete-view' %}"
+       hx-trigger="input changed delay:250ms"
+       hx-sync="this:replace"
+       hx-target="#suggestions"
+       hx-swap="innerHTML">
+<datalist id="suggestions"></datalist>
+```
+
+**Endpoint or context:** The autocomplete view returns bounded option elements for the native datalist.
+
+**Request kind:** GET
+
+**Context variables:** query parameter
+
+**Accessibility notes:** Retain the native input and datalist fallback.
+
+**Response contract:** Return bounded option elements only.
+
+**Related snippets:** [`htmx-search`](#htmx-search), [`htmx-field-check`](#htmx-field-check)
+
 ### `htmx-get`
 
 Django URL-backed HTMX GET button.
 
 **Classification:** Common
+
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
 
 ```django
 <button type="button"
@@ -63,6 +271,10 @@ Django URL-backed HTMX GET button.
 CSRF-safe Django form submitted through HTMX.
 
 **Classification:** Common
+
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
 
 ```django
 <form method="post"
@@ -82,6 +294,10 @@ CSRF-safe Django form submitted through HTMX.
 CSRF-safe Django delete form submitted through POST.
 
 **Classification:** Common
+
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
 
 ```django
 <form method="post"
@@ -103,21 +319,156 @@ Debounced Django HTMX search input.
 
 **Classification:** Common
 
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
+
 ```django
 <input type="search"
        name="q"
        hx-get="{% url 'search-view' %}"
        hx-trigger="input changed delay:300ms, search"
+       hx-sync="this:replace"
        hx-target="#results">
 ```
 
 **Endpoint or context:** The search view reads the input value and returns the current result-list fragment.
+
+**Request kind:** GET
+
+**Context variables:** query parameter
+
+**Accessibility notes:** Keep an accessible results-region label.
+
+**Response contract:** Return the current results fragment.
+
+**Related snippets:** [`htmx-filter-sort`](#htmx-filter-sort)
+
+### `htmx-pagination`
+
+Django pagination with fragment replacement and browser history.
+
+**Classification:** Common
+
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
+
+```django
+<section id="results">
+    <!-- Add content here. -->
+    <nav aria-label="Pagination">
+        {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}"
+               hx-get="?page={{ page_obj.previous_page_number }}"
+               hx-target="#results"
+               hx-swap="outerHTML"
+               hx-push-url="true">Previous</a>
+        {% endif %}
+        <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}"
+               hx-get="?page={{ page_obj.next_page_number }}"
+               hx-target="#results"
+               hx-swap="outerHTML"
+               hx-push-url="true">Next</a>
+        {% endif %}
+    </nav>
+</section>
+```
+
+**Endpoint or context:** The list view returns a full page for normal navigation and the complete results section for an HTMX request.
+
+**Request kind:** GET
+
+**Context variables:** page_obj
+
+**Accessibility notes:** Keep previous and next links as native navigation fallbacks.
+
+**Response contract:** Return the stable results root and vary page and fragment responses on HX-Request.
+
+**Related snippets:** [`htmx-filter-sort`](#htmx-filter-sort), [`htmx-load-more`](#htmx-load-more)
+
+### `htmx-load-more`
+
+Explicit Django load-more link with a replaceable sentinel.
+
+**Classification:** Common
+
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
+
+```django
+{% if page_obj.has_next %}
+    <li class="load-more">
+        <a href="?page={{ page_obj.next_page_number }}"
+           hx-get="?page={{ page_obj.next_page_number }}"
+           hx-target="closest li"
+           hx-swap="outerHTML">Load more</a>
+    </li>
+{% endif %}
+```
+
+**Endpoint or context:** The endpoint returns the next list items followed by a new load-more sentinel when another page exists.
+
+**Request kind:** GET
+
+**Context variables:** page_obj
+
+**Accessibility notes:** The link remains keyboard-accessible without HTMX.
+
+**Response contract:** Return list items and the next sentinel, not a full page.
+
+**Related snippets:** [`htmx-pagination`](#htmx-pagination), [`htmx-infinite`](#htmx-infinite)
+
+### `htmx-filter-sort`
+
+URL-backed Django filter and sort form with HTMX updates.
+
+**Classification:** Curated recipe
+
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
+
+```django
+<form method="get"
+      action="{% url 'list-view' %}"
+      hx-get="{% url 'list-view' %}"
+      hx-include="this"
+      hx-trigger="change, input changed delay:300ms"
+      hx-sync="this:replace"
+      hx-target="#results"
+      hx-swap="outerHTML"
+      hx-push-url="true">
+    <input type="search" name="q" value="{{ request.GET.q }}">
+    <!-- Add content here. -->
+    <button type="submit">Apply</button>
+</form>
+```
+
+**Endpoint or context:** The list view returns a full page for ordinary GET navigation and the complete results root for an HTMX request.
+
+**Request kind:** GET
+
+**Context variables:** request.GET
+
+**Accessibility notes:** The submit button provides a non-JavaScript fallback.
+
+**Response contract:** Return the stable results root and preserve canonical query parameters in the URL.
+
+**Related snippets:** [`htmx-search`](#htmx-search), [`htmx-pagination`](#htmx-pagination)
 
 ### `htmx-form-validation`
 
 Django form replaced with server-rendered validation state.
 
 **Classification:** Common
+
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
 
 ```django
 <form method="post"
@@ -138,6 +489,10 @@ Django form replaced with server-rendered validation state.
 CSRF-safe multipart file upload with a status target.
 
 **Classification:** Curated recipe
+
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
 
 ```django
 <form method="post"
@@ -164,6 +519,10 @@ CSRF-safe multipart file upload with a status target.
 CSRF-safe bulk action form for Django objects.
 
 **Classification:** Curated recipe
+
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
 
 ```django
 <form method="post"
@@ -205,6 +564,10 @@ Django select that loads options for a dependent field.
 
 **Classification:** Curated recipe
 
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
+
 ```django
 <label for="parent-select">Category</label>
 <select id="parent-select"
@@ -224,6 +587,10 @@ Django select that loads options for a dependent field.
 HTMX 4 Django form with status-specific validation handling.
 
 **Classification:** Curated recipe
+
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
 
 ```django
 <form method="post"
@@ -250,6 +617,10 @@ Load the next Django page when revealed.
 
 **Classification:** Common
 
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
+
 ```django
 {% if page_obj.has_next %}
     <div hx-get="?page={{ page_obj.next_page_number }}"
@@ -268,6 +639,10 @@ Poll a Django view until work is complete.
 
 **Classification:** Curated recipe
 
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
+
 ```django
 <div hx-get="{% url 'status-view' task.pk %}"
      hx-trigger="every 5s"
@@ -284,6 +659,10 @@ Poll a Django view until work is complete.
 Load a Django fragment when its placeholder appears.
 
 **Classification:** Common
+
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
 
 ```django
 <section hx-get="{% url 'fragment-view' %}"
@@ -302,6 +681,10 @@ Load a Django fragment when its placeholder appears.
 Progressively enhance Django navigation with history updates.
 
 **Classification:** Curated recipe
+
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
 
 ```django
 <nav aria-label="Primary">
@@ -325,6 +708,10 @@ Poll server-rendered progress for a Django task.
 
 **Classification:** Curated recipe
 
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
+
 ```django
 <div hx-get="{% url 'progress-view' task.pk %}"
      hx-trigger="every 1s"
@@ -347,6 +734,10 @@ Replace a Django object summary with an edit form.
 
 **Classification:** Common
 
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
+
 ```django
 <article>
     <h2>{{ object }}</h2>
@@ -364,6 +755,10 @@ Replace a Django object summary with an edit form.
 Replace a Django table row with server-rendered editing controls.
 
 **Classification:** Curated recipe
+
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
 
 ```django
 <tr id="item-{{ object.pk }}">
@@ -385,6 +780,10 @@ Load a script-free non-modal dialog from a Django view.
 
 **Classification:** Curated recipe
 
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
+
 ```django
 <button type="button"
         hx-get="{% url 'dialog-view' object.pk %}"
@@ -401,6 +800,10 @@ Load a script-free non-modal dialog from a Django view.
 Load a Django view into a fixed CSS-only modal overlay.
 
 **Classification:** Curated recipe
+
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
 
 ```django
 <button type="button"
@@ -423,6 +826,10 @@ Load a Django view into a fixed CSS-only modal overlay.
 Replace server-rendered tabs and selected state.
 
 **Classification:** Curated recipe
+
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
 
 ```django
 <section id="tabs" aria-label="Sections">
@@ -452,6 +859,10 @@ HTMX 4 state-preserving refresh.
 
 **Classification:** Curated recipe
 
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
+
 ```django
 <section id="live-region"
          hx-get="{% url 'fragment-view' %}"
@@ -471,6 +882,10 @@ Update a second region from a Django HTMX response.
 
 **Classification:** Common
 
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
+
 ```django
 <section id="summary" hx-swap-oob="true">
     Updated summary
@@ -485,6 +900,10 @@ Append an accessible notification from an HTMX response.
 
 **Classification:** Curated recipe
 
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
+
 ```django
 <div id="notifications" hx-swap-oob="beforeend:#notifications">
     <p role="status" aria-live="polite">Saved successfully.</p>
@@ -498,6 +917,10 @@ Append an accessible notification from an HTMX response.
 HTMX 4 response fragment with explicit target and swap.
 
 **Classification:** Curated recipe
+
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
 
 ```django
 <hx-partial hx-target="#notifications" hx-swap="append">
@@ -515,6 +938,10 @@ Define a Django 6 template partial.
 
 **Classification:** Django 6
 
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
+
 ```django
 {% partialdef partial_name %}
 <!-- Add content here. -->
@@ -529,6 +956,10 @@ Define and render an inline Django 6 template partial.
 
 **Classification:** Django 6
 
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
+
 ```django
 {% partialdef partial_name inline %}
 <!-- Add content here. -->
@@ -542,6 +973,10 @@ Define and render an inline Django 6 template partial.
 Render a same-file Django 6 template partial.
 
 **Classification:** Django 6
+
+**HTMX versions:** 2, 4
+
+**Django versions:** 4.2+
 
 ```django
 {% partial partial_name %}

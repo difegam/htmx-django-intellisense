@@ -119,6 +119,14 @@ class SourceSnippetEntry(BaseModel):
     description: str
     body_file: str
     usage: str
+    htmx_versions: list[str] = ["2", "4"]
+    django_versions: list[str] = ["4.2+"]
+    request_kind: Literal["GET", "POST", "mixed", "response", "none"] = "none"
+    context_variables: list[str] = []
+    response_contract: str = ""
+    security_notes: list[str] = []
+    accessibility_notes: list[str] = []
+    related_snippets: list[str] = []
 
 
 class SnippetEntry(BaseModel):
@@ -131,6 +139,14 @@ class SnippetEntry(BaseModel):
     description: str
     body: list[str]
     usage: str
+    htmx_versions: list[str] = ["2", "4"]
+    django_versions: list[str] = ["4.2+"]
+    request_kind: Literal["GET", "POST", "mixed", "response", "none"] = "none"
+    context_variables: list[str] = []
+    response_contract: str = ""
+    security_notes: list[str] = []
+    accessibility_notes: list[str] = []
+    related_snippets: list[str] = []
 
     @model_validator(mode="after")
     def _check_entry(self) -> SnippetEntry:
@@ -147,6 +163,23 @@ class SnippetEntry(BaseModel):
             raise ValueError(f"{label}: unknown category {self.category!r}")
         if self.classification not in CLASSIFICATIONS:
             raise ValueError(f"{label}: unknown classification {self.classification!r}")
+
+        if not self.htmx_versions or any(
+            version not in {"2", "4"} for version in self.htmx_versions
+        ):
+            raise ValueError(f"{label}: unknown HTMX version")
+        if not self.django_versions or any(not version.strip() for version in self.django_versions):
+            raise ValueError(f"{label}: django_versions must contain non-empty strings")
+        for field in (
+            "context_variables",
+            "security_notes",
+            "accessibility_notes",
+            "related_snippets",
+        ):
+            if any(not value.strip() for value in getattr(self, field)):
+                raise ValueError(f"{label}: {field} must contain non-empty strings")
+        if self.response_contract and not self.response_contract.strip():
+            raise ValueError(f"{label}: response_contract must be non-empty when set")
 
         if (self.category == "Django partials") != (self.classification == "django-6"):
             raise ValueError(f"{label}: Django partials must use the django-6 classification")
@@ -214,3 +247,10 @@ def validate_source(entries: list[SnippetEntry]) -> None:
 
         names.add(entry.name)
         prefixes.add(entry.prefix)
+
+    for entry in entries:
+        for related in entry.related_snippets:
+            if related == entry.prefix:
+                raise ValueError(f"{entry.prefix}: may not relate to itself")
+            if related not in prefixes:
+                raise ValueError(f"{entry.prefix}: unknown related snippet {related!r}")

@@ -1,0 +1,8 @@
+<input id="${1:field}"
+       name="${2:value}"
+       hx-get="{% url '${3:check-view}' %}"
+       hx-trigger="input changed delay:${4:400ms}"
+       hx-sync="this:replace"
+       hx-target="#${5:field-status}"
+       hx-swap="outerHTML">
+<span id="${5:field-status}" aria-live="polite"></span>

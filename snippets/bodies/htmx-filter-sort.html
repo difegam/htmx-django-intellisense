@@ -1,0 +1,13 @@
+<form method="get"
+      action="{% url '${1:list-view}' %}"
+      hx-get="{% url '${1:list-view}' %}"
+      hx-include="this"
+      hx-trigger="change, input changed delay:${3:300ms}"
+      hx-sync="this:replace"
+      hx-target="#${2:results}"
+      hx-swap="outerHTML"
+      hx-push-url="true">
+    <input type="search" name="q" value="{{ request.GET.q }}">
+    $0
+    <button type="submit">${4:Apply}</button>
+</form>
