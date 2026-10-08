@@ -1,0 +1,10 @@
+<input id="${1:search}"
+       type="search"
+       name="${2:q}"
+       list="${3:suggestions}"
+       hx-get="{% url '${4:autocomplete-view}' %}"
+       hx-trigger="input changed delay:${5:250ms}"
+       hx-sync="this:replace"
+       hx-target="#${3:suggestions}"
+       hx-swap="innerHTML">
+<datalist id="${3:suggestions}"></datalist>

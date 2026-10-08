@@ -119,6 +119,14 @@ class SourceSnippetEntry(BaseModel):
     description: str
     body_file: str
     usage: str
+    htmx_versions: list[str] = ["2", "4"]
+    django_versions: list[str] = ["4.2+"]
+    request_kind: Literal["GET", "POST", "mixed", "response", "none"] = "none"
+    context_variables: list[str] = []
+    response_contract: str = ""
+    security_notes: list[str] = []
+    accessibility_notes: list[str] = []
+    related_snippets: list[str] = []
 
 
 class SnippetEntry(BaseModel):

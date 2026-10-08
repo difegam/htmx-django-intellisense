@@ -62,14 +62,17 @@ CSRF-safe debounced Django autosave form.
 **Django versions:** 4.2+
 
 ```django
-<form method="post" action="{% url 'autosave-view' object.pk %}"
+<form method="post"
+      action="{% url 'autosave-view' object.pk %}"
       hx-post="{% url 'autosave-view' object.pk %}"
-      hx-trigger="input changed delay:750ms" hx-sync="this:replace"
-      hx-target="#save-status" hx-swap="outerHTML">
-  {% csrf_token %}
-  <!-- Add content here. -->
-  <button type="submit">Save draft</button>
-  <output id="save-status" aria-live="polite">Not saved yet</output>
+      hx-trigger="input changed delay:750ms"
+      hx-sync="this:replace"
+      hx-target="#save-status"
+      hx-swap="outerHTML">
+    {% csrf_token %}
+    <!-- Add content here. -->
+    <button type="submit">Save draft</button>
+    <output id="save-status" aria-live="polite">Not saved yet</output>
 </form>
 ```
 
@@ -99,13 +102,15 @@ CSRF-safe server-authoritative boolean toggle.
 
 ```django
 <article id="item-{{ object.pk }}">
-  <!-- Add content here. -->
-  <form method="post" action="{% url 'toggle-view' object.pk %}"
-        hx-post="{% url 'toggle-view' object.pk %}"
-        hx-target="closest article" hx-swap="outerHTML">
-    {% csrf_token %}
-    <button type="submit" aria-pressed="{{ object.enabled|yesno:'true,false' }}">Toggle</button>
-  </form>
+    <!-- Add content here. -->
+    <form method="post"
+          action="{% url 'toggle-view' object.pk %}"
+          hx-post="{% url 'toggle-view' object.pk %}"
+          hx-target="closest article"
+          hx-swap="outerHTML">
+        {% csrf_token %}
+        <button type="submit" aria-pressed="{{ object.enabled|yesno:'true,false' }}">Toggle</button>
+    </form>
 </article>
 ```
 
@@ -135,23 +140,28 @@ CSRF-safe soft delete that returns a server-authorized undo state.
 
 ```django
 <article id="item-{{ object.pk }}">
-  {% if object.deleted %}
-    <p role="status">Deleted</p>
-    <form method="post" action="{% url 'undo-view' object.pk %}"
-          hx-post="{% url 'undo-view' object.pk %}"
-          hx-target="closest article" hx-swap="outerHTML">
-      {% csrf_token %}
-      <button type="submit">Undo</button>
-    </form>
-  {% else %}
-    <!-- Add content here. -->
-    <form method="post" action="{% url 'delete-view' object.pk %}"
-          hx-post="{% url 'delete-view' object.pk %}"
-          hx-confirm="Delete this item?" hx-target="closest article" hx-swap="outerHTML">
-      {% csrf_token %}
-      <button type="submit">Delete</button>
-    </form>
-  {% endif %}
+    {% if object.deleted %}
+        <p role="status">Deleted</p>
+        <form method="post"
+              action="{% url 'undo-view' object.pk %}"
+              hx-post="{% url 'undo-view' object.pk %}"
+              hx-target="closest article"
+              hx-swap="outerHTML">
+            {% csrf_token %}
+            <button type="submit">Undo</button>
+        </form>
+    {% else %}
+        <!-- Add content here. -->
+        <form method="post"
+              action="{% url 'delete-view' object.pk %}"
+              hx-post="{% url 'delete-view' object.pk %}"
+              hx-confirm="Delete this item?"
+              hx-target="closest article"
+              hx-swap="outerHTML">
+            {% csrf_token %}
+            <button type="submit">Delete</button>
+        </form>
+    {% endif %}
 </article>
 ```
 
@@ -180,9 +190,13 @@ Debounced side-effect-free Django field availability check.
 **Django versions:** 4.2+
 
 ```django
-<input id="field" name="value"
-       hx-get="{% url 'check-view' %}" hx-trigger="input changed delay:400ms"
-       hx-sync="this:replace" hx-target="#field-status" hx-swap="outerHTML">
+<input id="field"
+       name="value"
+       hx-get="{% url 'check-view' %}"
+       hx-trigger="input changed delay:400ms"
+       hx-sync="this:replace"
+       hx-target="#field-status"
+       hx-swap="outerHTML">
 <span id="field-status" aria-live="polite"></span>
 ```
 
@@ -209,9 +223,15 @@ Debounced Django autocomplete using a native datalist.
 **Django versions:** 4.2+
 
 ```django
-<input id="search" type="search" name="q" list="suggestions"
-       hx-get="{% url 'autocomplete-view' %}" hx-trigger="input changed delay:250ms"
-       hx-sync="this:replace" hx-target="#suggestions" hx-swap="innerHTML">
+<input id="search"
+       type="search"
+       name="q"
+       list="suggestions"
+       hx-get="{% url 'autocomplete-view' %}"
+       hx-trigger="input changed delay:250ms"
+       hx-sync="this:replace"
+       hx-target="#suggestions"
+       hx-swap="innerHTML">
 <datalist id="suggestions"></datalist>
 ```
 
@@ -336,18 +356,18 @@ Django pagination with fragment replacement and browser history.
 
 ```django
 <section id="results">
-  <!-- Add content here. -->
-  <nav aria-label="Pagination">
-    {% if page_obj.has_previous %}
-      <a href="?page={{ page_obj.previous_page_number }}" hx-get="?page={{ page_obj.previous_page_number }}"
-         hx-target="#results" hx-swap="outerHTML" hx-push-url="true">Previous</a>
-    {% endif %}
-    <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
-    {% if page_obj.has_next %}
-      <a href="?page={{ page_obj.next_page_number }}" hx-get="?page={{ page_obj.next_page_number }}"
-         hx-target="#results" hx-swap="outerHTML" hx-push-url="true">Next</a>
-    {% endif %}
-  </nav>
+    <!-- Add content here. -->
+    <nav aria-label="Pagination">
+        {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}" hx-get="?page={{ page_obj.previous_page_number }}"
+               hx-target="#results" hx-swap="outerHTML" hx-push-url="true">Previous</a>
+        {% endif %}
+        <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" hx-get="?page={{ page_obj.next_page_number }}"
+               hx-target="#results" hx-swap="outerHTML" hx-push-url="true">Next</a>
+        {% endif %}
+    </nav>
 </section>
 ```
 
@@ -375,10 +395,10 @@ Explicit Django load-more link with a replaceable sentinel.
 
 ```django
 {% if page_obj.has_next %}
-  <li class="load-more">
-    <a href="?page={{ page_obj.next_page_number }}" hx-get="?page={{ page_obj.next_page_number }}"
-       hx-target="closest li" hx-swap="outerHTML">Load more</a>
-  </li>
+    <li class="load-more">
+        <a href="?page={{ page_obj.next_page_number }}" hx-get="?page={{ page_obj.next_page_number }}"
+           hx-target="closest li" hx-swap="outerHTML">Load more</a>
+    </li>
 {% endif %}
 ```
 
@@ -408,9 +428,9 @@ URL-backed Django filter and sort form with HTMX updates.
 <form method="get" action="{% url 'list-view' %}" hx-get="{% url 'list-view' %}"
       hx-include="this" hx-trigger="change, input changed delay:300ms"
       hx-sync="this:replace" hx-target="#results" hx-swap="outerHTML" hx-push-url="true">
-  <input type="search" name="q" value="{{ request.GET.q }}">
-  <!-- Add content here. -->
-  <button type="submit">Apply</button>
+    <input type="search" name="q" value="{{ request.GET.q }}">
+    <!-- Add content here. -->
+    <button type="submit">Apply</button>
 </form>
 ```
 

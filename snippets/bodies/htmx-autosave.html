@@ -1,0 +1,12 @@
+<form method="post"
+      action="{% url '${1:autosave-view}' ${2:object.pk} %}"
+      hx-post="{% url '${1:autosave-view}' ${2:object.pk} %}"
+      hx-trigger="input changed delay:${3:750ms}"
+      hx-sync="this:replace"
+      hx-target="#${4:save-status}"
+      hx-swap="outerHTML">
+    {% csrf_token %}
+    $0
+    <button type="submit">${5:Save draft}</button>
+    <output id="${4:save-status}" aria-live="polite">${6:Not saved yet}</output>
+</form>

@@ -100,6 +100,14 @@ def _entry(**overrides):
         "description": "Load safe content",
         "body": ["<button hx-get=\"{% url 'safe-view' %}\">Load</button>"],
         "usage": "The view returns HTML.",
+        "htmx_versions": ["2", "4"],
+        "django_versions": ["4.2+"],
+        "request_kind": "none",
+        "context_variables": [],
+        "response_contract": "",
+        "security_notes": [],
+        "accessibility_notes": [],
+        "related_snippets": [],
     }
     entry.update(overrides)
     return entry

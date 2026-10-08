@@ -1,0 +1,24 @@
+<article id="${1:item}-{{ object.pk }}">
+    {% if object.deleted %}
+        <p role="status">${2:Deleted}</p>
+        <form method="post"
+              action="{% url '${3:undo-view}' ${4:object.pk} %}"
+              hx-post="{% url '${3:undo-view}' ${4:object.pk} %}"
+              hx-target="closest article"
+              hx-swap="outerHTML">
+            {% csrf_token %}
+            <button type="submit">${5:Undo}</button>
+        </form>
+    {% else %}
+        $0
+        <form method="post"
+              action="{% url '${6:delete-view}' ${7:object.pk} %}"
+              hx-post="{% url '${6:delete-view}' ${7:object.pk} %}"
+              hx-confirm="${8:Delete this item?}"
+              hx-target="closest article"
+              hx-swap="outerHTML">
+            {% csrf_token %}
+            <button type="submit">${9:Delete}</button>
+        </form>
+    {% endif %}
+</article>
