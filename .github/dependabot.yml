@@ -12,6 +12,8 @@ updates:
       # @typescript-eslint does not support TypeScript 7 yet (npm ERESOLVE).
       - dependency-name: typescript
         update-types: ["version-update:semver-major"]
+      # @types/vscode must not exceed engines.vscode in package.json (vsce refuses to package).
+      - dependency-name: "@types/vscode"
     open-pull-requests-limit: 5
 
   # Python tooling under tools/ (uv-managed, uv.lock as the lockfile)
