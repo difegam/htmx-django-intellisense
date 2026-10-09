@@ -324,17 +324,26 @@ interface PythonToken {
   contentStart?: number;
   closed?: boolean;
   staticString?: boolean;
+  /** A line break separates this token from the previous one. */
+  newlineBefore?: boolean;
 }
 
 function pythonTokens(text: string): PythonToken[] {
   const tokens: PythonToken[] = [];
   let cursor = 0;
+  let newline = false;
+  const emit = (token: PythonToken): void => {
+    tokens.push(newline ? { ...token, newlineBefore: true } : token);
+    newline = false;
+  };
   while (cursor < text.length) {
     if (/\s/.test(text[cursor] ?? "")) {
+      newline ||= text[cursor] === "\n" || text[cursor] === "\r";
       cursor++;
       continue;
     }
     if (text[cursor] === "#") {
+      newline = true;
       cursor = text.indexOf("\n", cursor);
       if (cursor === -1) {
         break;
@@ -350,7 +359,7 @@ function pythonTokens(text: string): PythonToken[] {
       }
       prefix = text.slice(tokenStart, cursor);
       if (text[cursor] !== '"' && text[cursor] !== "'") {
-        tokens.push({ type: "identifier", value: prefix, start: tokenStart });
+        emit({ type: "identifier", value: prefix, start: tokenStart });
         continue;
       }
     }
@@ -368,7 +377,7 @@ function pythonTokens(text: string): PythonToken[] {
         if (text.startsWith(quote.repeat(quoteLength), cursor)) {
           const contentEnd = cursor;
           cursor += quoteLength;
-          tokens.push({
+          emit({
             type: "string",
             value: text.slice(contentStart, contentEnd),
             start: tokenStart,
@@ -381,7 +390,7 @@ function pythonTokens(text: string): PythonToken[] {
         cursor++;
       }
       if (tokens.at(-1)?.start !== tokenStart) {
-        tokens.push({
+        emit({
           type: "string",
           value: text.slice(contentStart),
           start: tokenStart,
@@ -393,7 +402,7 @@ function pythonTokens(text: string): PythonToken[] {
       continue;
     }
 
-    tokens.push({ type: "punctuation", value: text.charAt(cursor), start: cursor });
+    emit({ type: "punctuation", value: text.charAt(cursor), start: cursor });
     cursor++;
   }
   return tokens;
@@ -438,6 +447,10 @@ function isTemplateNameAssignment(tokens: PythonToken[], index: number, stack: P
   }
   const next = tokens[index + 1];
   if (next === undefined) {
+    return true;
+  }
+  if (next.newlineBefore === true) {
+    // Outside brackets a line break ends the statement, so whatever follows is a new one.
     return true;
   }
   if (next.type === "identifier") {
@@ -654,13 +667,31 @@ export function attributeAtOffset(scan: ScanResult, offset: number): AttributeTo
   );
 }
 
+/** The partial name under `offset`; a hit on an `endpartialdef` name reports that name's span. */
 export function partialAtOffset(
   scan: ScanResult,
   offset: number,
 ): PartialDefinition | PartialReference | undefined {
-  return [...scan.partialDefinitions, ...scan.partialReferences].find(
+  const direct = [...scan.partialDefinitions, ...scan.partialReferences].find(
     (partial) => offset >= partial.nameStart && offset <= partial.nameEnd,
   );
+  if (direct !== undefined) {
+    return direct;
+  }
+  const closed = scan.partialDefinitions.find(
+    (definition) =>
+      definition.endNameStart !== undefined &&
+      definition.endNameEnd !== undefined &&
+      offset >= definition.endNameStart &&
+      offset <= definition.endNameEnd,
+  );
+  return closed === undefined
+    ? undefined
+    : {
+        ...closed,
+        nameStart: closed.endNameStart ?? closed.nameStart,
+        nameEnd: closed.endNameEnd ?? closed.nameEnd,
+      };
 }
 
 export interface PartialNameSpan extends Span {
