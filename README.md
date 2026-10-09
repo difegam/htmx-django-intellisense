@@ -1,6 +1,6 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://github.com/difegam/htmx-django-intellisense/raw/HEAD/docs/assets/logo-dark.svg">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-dark.svg">
     <img alt="HTMX Django IntelliSense" src="docs/assets/logo.png" width="520">
   </picture>
 </p>
@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <a href="https://marketplace.visualstudio.com/items?itemName=difegam3.htmx-django-intellisense"><img alt="VS Marketplace" src="https://img.shields.io/visual-studio-marketplace/v/difegam3.htmx-django-intellisense?label=VS%20Marketplace&color=0C4B33"></a>
+  <a href="https://marketplace.visualstudio.com/items?itemName=difegam3.htmx-django-intellisense"><img alt="VS Marketplace" src="https://vsmarketplacebadges.dev/version-short/difegam3.htmx-django-intellisense.svg?label=VS%20Marketplace&color=0C4B33"></a>
   <a href="https://open-vsx.org/extension/difegam3/htmx-django-intellisense"><img alt="Open VSX" src="https://img.shields.io/open-vsx/v/difegam3/htmx-django-intellisense?label=Open%20VSX&color=0C4B33"></a>
   <img alt="HTMX 2.0.11 | 4.0.0" src="https://img.shields.io/badge/htmx-2.0.11%20%7C%204.0.0-4C8DFF">
   <img alt="Django 6 partials" src="https://img.shields.io/badge/django-6%20partials-0C4B33">
