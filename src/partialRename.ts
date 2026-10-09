@@ -133,6 +133,15 @@ export function collectPartialReferences(
 ): PartialUsage[] {
   const spans: PartialUsage[] = [];
   const definingPaths: string[] = [];
+  const scans = new Map<string, ScanResult>();
+  const scanOf = (file: PartialSourceFile): ScanResult => {
+    let scan = scans.get(file.path);
+    if (scan === undefined) {
+      scan = scanDocument(file.text);
+      scans.set(file.path, scan);
+    }
+    return scan;
+  };
   for (const file of files) {
     if (file.languageId !== "django-html") {
       continue;
@@ -144,9 +153,7 @@ export function collectPartialReferences(
     if (!isTarget) {
       continue;
     }
-    const own = partialSpansByName(scanDocument(file.text), name).filter(
-      (span) => span.kind === "definition",
-    );
+    const own = partialSpansByName(scanOf(file), name).filter((span) => span.kind === "definition");
     if (own.length > 0) {
       definingPaths.push(file.path);
       spans.push(
@@ -157,7 +164,7 @@ export function collectPartialReferences(
   for (const file of files) {
     const local =
       definingPaths.includes(file.path) || file.path === target.selfPath
-        ? partialSpansByName(scanDocument(file.text), name).filter((span) => span.kind === "reference")
+        ? partialSpansByName(scanOf(file), name).filter((span) => span.kind === "reference")
         : [];
     spans.push(
       ...local.map((span) => ({ path: file.path, start: span.start, end: span.end, kind: span.kind })),
