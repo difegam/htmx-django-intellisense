@@ -28,7 +28,7 @@ export function normalizeTemplateName(templateName: string): string {
   return templateName.replace(/\\/g, "/").replace(/^(\.\/)+/, "");
 }
 
-function matchesTemplate(path: string, templateName: string): boolean {
+export function matchesTemplate(path: string, templateName: string): boolean {
   const normalized = normalizeTemplateName(templateName);
   return path === normalized || path.endsWith(`/${normalized}`);
 }
@@ -113,4 +113,89 @@ export function planPartialUsages(
     }
   }
   return { kind: "ok", targetPath, spans };
+}
+
+/**
+ * Every usage of a partial for Find All References. Unlike a rename plan it never refuses:
+ * duplicate, ambiguous, or missing definitions still list whatever uses exist.
+ */
+export function collectPartialReferences(
+  files: readonly PartialSourceFile[],
+  target: PartialTarget,
+  name: string,
+): PartialUsage[] {
+  const spans: PartialUsage[] = [];
+  const definingPaths: string[] = [];
+  for (const file of files) {
+    if (file.languageId !== "django-html") {
+      continue;
+    }
+    const isTarget =
+      target.selfPath !== undefined
+        ? file.path === target.selfPath
+        : matchesTemplate(file.path, target.templateName);
+    if (!isTarget) {
+      continue;
+    }
+    const own = partialSpansByName(scanDocument(file.text), name).filter(
+      (span) => span.kind === "definition",
+    );
+    if (own.length > 0) {
+      definingPaths.push(file.path);
+      spans.push(
+        ...own.map((span) => ({ path: file.path, start: span.start, end: span.end, kind: span.kind })),
+      );
+    }
+  }
+  for (const file of files) {
+    const local = definingPaths.includes(file.path)
+      ? partialSpansByName(scanDocument(file.text), name).filter((span) => span.kind === "reference")
+      : [];
+    spans.push(
+      ...local.map((span) => ({ path: file.path, start: span.start, end: span.end, kind: span.kind })),
+    );
+    for (const reference of scanTemplatePartialReferences(file.text, file.languageId)) {
+      if (reference.name !== name) {
+        continue;
+      }
+      const matches =
+        definingPaths.length > 0
+          ? definingPaths.some((path) => matchesTemplate(path, reference.templateName))
+          : target.templateName !== undefined &&
+            normalizeTemplateName(reference.templateName) === normalizeTemplateName(target.templateName);
+      if (matches) {
+        spans.push({
+          path: file.path,
+          start: reference.nameStart,
+          end: reference.nameEnd,
+          kind: "reference",
+        });
+      }
+    }
+  }
+  return spans;
+}
+
+/** Converts string offsets to line/character without opening a document. */
+export function createLineIndex(text: string): (offset: number) => { line: number; character: number } {
+  const starts = [0];
+  for (let index = 0; index < text.length; index++) {
+    const character = text[index];
+    if (character === "\n" || (character === "\r" && text[index + 1] !== "\n")) {
+      starts.push(index + 1);
+    }
+  }
+  return (offset) => {
+    let low = 0;
+    let high = starts.length - 1;
+    while (low < high) {
+      const middle = Math.ceil((low + high) / 2);
+      if ((starts[middle] ?? 0) <= offset) {
+        low = middle;
+      } else {
+        high = middle - 1;
+      }
+    }
+    return { line: low, character: offset - (starts[low] ?? 0) };
+  };
 }

@@ -186,3 +186,11 @@ class Dynamic(TemplateView):
     ],
   );
 });
+
+test("template_name partial is found before a decorator and with an annotation", async () => {
+  const { scanTemplatePartialReferences } = await import("../scanner.js");
+  const decorated = `class V(TemplateView):\n    template_name = "a.html#card"\n\n    @method_decorator(x)\n    def dispatch(self): pass\n`;
+  assert.equal(scanTemplatePartialReferences(decorated, "python")[0]?.name, "card");
+  const annotated = `class V(TemplateView):\n    template_name: str = "a.html#card"\n    x = 1\n`;
+  assert.equal(scanTemplatePartialReferences(annotated, "python")[0]?.name, "card");
+});

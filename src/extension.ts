@@ -15,7 +15,12 @@ import {
   valuesForMode,
   versionsLabel,
 } from "./intellisense.js";
+import { buildExcludeGlob, DEFAULT_SOURCE_EXCLUDES } from "./globs.js";
 import {
+  collectPartialReferences,
+  createLineIndex,
+  matchesTemplate,
+  normalizeTemplateName,
   planPartialUsages,
   type PartialSourceFile,
   type PartialTarget,
@@ -273,7 +278,7 @@ async function resolveTemplateFiles(
   templateName: string,
   token: vscode.CancellationToken,
 ): Promise<vscode.Uri[]> {
-  const normalized = templateName.replace(/\\/g, "/").replace(/^(\.\/)+/, "");
+  const normalized = normalizeTemplateName(templateName);
   const parts = normalized.split("/");
   const basename = parts.at(-1);
   if (basename === undefined || basename === "" || normalized.startsWith("/") || parts.includes("..")) {
@@ -289,9 +294,8 @@ async function resolveTemplateFiles(
     TEMPLATE_FINDFILES_LIMIT,
     token,
   );
-  const suffix = `/${normalized}`;
   const matches = uris
-    .filter((uri) => uri.path === normalized || uri.path.endsWith(suffix))
+    .filter((uri) => matchesTemplate(uri.path, normalized))
     .sort((left, right) => left.toString().localeCompare(right.toString()));
   if (!token.isCancellationRequested) {
     templateFileCache.set(normalized, matches);
@@ -303,7 +307,7 @@ async function resolveTemplatePartials(
   templateName: string,
   token: vscode.CancellationToken,
 ): Promise<ResolvedPartialDefinition[]> {
-  const normalized = templateName.replace(/\\/g, "/").replace(/^(\.\/)+/, "");
+  const normalized = normalizeTemplateName(templateName);
   const cached = templatePartialCache.get(normalized);
   if (cached !== undefined) {
     return cached;
@@ -797,8 +801,10 @@ function partialNameRange(
     : new vscode.Range(document.positionAt(selection.start), document.positionAt(selection.end));
 }
 
-function excludeGlob(): string | undefined {
-  const patterns = new Set<string>();
+const SOURCE_FILE_GLOB = "**/*.{html,htm,djhtml,txt,xml,py}";
+
+async function sourceExcludeGlob(token: vscode.CancellationToken): Promise<string | undefined> {
+  const patterns = new Set<string>(DEFAULT_SOURCE_EXCLUDES);
   for (const section of ["files", "search"]) {
     const excludes = vscode.workspace.getConfiguration(section).get<Record<string, unknown>>("exclude") ?? {};
     for (const [pattern, enabled] of Object.entries(excludes)) {
@@ -807,7 +813,13 @@ function excludeGlob(): string | undefined {
       }
     }
   }
-  return patterns.size === 0 ? undefined : `{${[...patterns].join(",")}}`;
+  // Virtual environments with any name are marked by a pyvenv.cfg file.
+  const markers = await vscode.workspace.findFiles("**/pyvenv.cfg", buildExcludeGlob(patterns), 50, token);
+  for (const marker of markers) {
+    const directory = vscode.workspace.asRelativePath(vscode.Uri.joinPath(marker, ".."), false);
+    patterns.add(`${directory.split("/").map(escapeGlobSegment).join("/")}/**`);
+  }
+  return buildExcludeGlob(patterns);
 }
 
 /**
@@ -820,8 +832,8 @@ async function collectPartialSources(
   token: vscode.CancellationToken,
 ): Promise<{ files: PartialSourceFile[]; uris: Map<string, vscode.Uri>; capped: boolean }> {
   const found = await vscode.workspace.findFiles(
-    "**/*.{html,py}",
-    excludeGlob(),
+    SOURCE_FILE_GLOB,
+    await sourceExcludeGlob(token),
     TEMPLATE_FINDFILES_LIMIT,
     token,
   );
@@ -832,11 +844,15 @@ async function collectPartialSources(
   const files: PartialSourceFile[] = [];
   const decoder = new TextDecoder();
   const read = async (uri: vscode.Uri): Promise<void> => {
-    const opened = open.get(uri.toString());
-    const text = opened?.getText() ?? decoder.decode(await vscode.workspace.fs.readFile(uri));
-    if (text.includes(name) || uri.path === document.uri.path) {
-      uris.set(uri.path, uri);
-      files.push({ path: uri.path, languageId: uri.path.endsWith(".py") ? "python" : "django-html", text });
+    try {
+      const opened = open.get(uri.toString());
+      const text = opened?.getText() ?? decoder.decode(await vscode.workspace.fs.readFile(uri));
+      if (text.includes(name)) {
+        uris.set(uri.path, uri);
+        files.push({ path: uri.path, languageId: uri.path.endsWith(".py") ? "python" : "django-html", text });
+      }
+    } catch {
+      // A file deleted or unreadable mid-scan cannot hold a usable reference; skip it.
     }
   };
   await Promise.all(found.filter((uri) => uri.path !== document.uri.path).map(read));
@@ -854,7 +870,13 @@ async function planAtPosition(
   token: vscode.CancellationToken,
   newName?: string,
 ): Promise<
-  | { selection: PartialSelection; plan: PartialUsagePlan; uris: Map<string, vscode.Uri>; capped: boolean }
+  | {
+      selection: PartialSelection;
+      files: PartialSourceFile[];
+      plan: PartialUsagePlan;
+      uris: Map<string, vscode.Uri>;
+      capped: boolean;
+    }
   | undefined
 > {
   const selection = partialSelectionAt(document, document.offsetAt(position));
@@ -864,31 +886,35 @@ async function planAtPosition(
   const { files, uris, capped } = await collectPartialSources(selection.name, document, token);
   return {
     selection,
+    files,
     plan: planPartialUsages(files, selection.target, selection.name, newName),
     uris,
     capped,
   };
 }
 
-async function usageLocations(
+/** Maps usage offsets to ranges using the text already read, so no document is opened. */
+function usageLocations(
   spans: readonly PartialUsage[],
   uris: Map<string, vscode.Uri>,
-): Promise<{ uri: vscode.Uri; range: vscode.Range; kind: PartialUsage["kind"] }[]> {
-  const documents = new Map<string, vscode.TextDocument>();
+  files: readonly PartialSourceFile[],
+): { uri: vscode.Uri; range: vscode.Range; kind: PartialUsage["kind"] }[] {
+  const indexes = new Map<string, ReturnType<typeof createLineIndex>>();
+  for (const file of files) {
+    indexes.set(file.path, createLineIndex(file.text));
+  }
   const result: { uri: vscode.Uri; range: vscode.Range; kind: PartialUsage["kind"] }[] = [];
   for (const span of spans) {
     const uri = uris.get(span.path);
-    if (uri === undefined) {
+    const locate = indexes.get(span.path);
+    if (uri === undefined || locate === undefined) {
       continue;
     }
-    let opened = documents.get(span.path);
-    if (opened === undefined) {
-      opened = await vscode.workspace.openTextDocument(uri);
-      documents.set(span.path, opened);
-    }
+    const start = locate(span.start);
+    const end = locate(span.end);
     result.push({
       uri,
-      range: new vscode.Range(opened.positionAt(span.start), opened.positionAt(span.end)),
+      range: new vscode.Range(start.line, start.character, end.line, end.character),
       kind: span.kind,
     });
   }
@@ -901,12 +927,13 @@ async function provideReferences(
   context: vscode.ReferenceContext,
   token: vscode.CancellationToken,
 ): Promise<vscode.Location[] | undefined> {
-  const planned = await planAtPosition(document, position, token);
-  if (planned === undefined || planned.plan.kind === "error") {
+  const selection = partialSelectionAt(document, document.offsetAt(position));
+  if (selection === undefined) {
     return undefined;
   }
-  const usages = await usageLocations(planned.plan.spans, planned.uris);
-  return usages
+  const { files, uris } = await collectPartialSources(selection.name, document, token);
+  const spans = collectPartialReferences(files, selection.target, selection.name);
+  return usageLocations(spans, uris, files)
     .filter((usage) => context.includeDeclaration || usage.kind !== "definition")
     .map((usage) => new vscode.Location(usage.uri, usage.range));
 }
@@ -936,7 +963,7 @@ async function provideRenameEdits(
     );
   }
   const edit = new vscode.WorkspaceEdit();
-  for (const usage of await usageLocations(planned.plan.spans, planned.uris)) {
+  for (const usage of usageLocations(planned.plan.spans, planned.uris, planned.files)) {
     edit.replace(usage.uri, usage.range, newName);
   }
   return edit;

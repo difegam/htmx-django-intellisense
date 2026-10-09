@@ -30,6 +30,9 @@ export interface PartialDefinition {
   tagStart: number;
   tagEnd: number;
   inline: boolean;
+  /** Span of the optional name in the closing `{% endpartialdef name %}`. */
+  endNameStart?: number;
+  endNameEnd?: number;
 }
 
 export interface PartialReference {
@@ -240,7 +243,8 @@ function scanPartials(text: string): Pick<ScanResult, "partialDefinitions" | "pa
   const visible = maskIgnoredDjangoRegions(text);
   const partialDefinitions: PartialDefinition[] = [];
   const partialReferences: PartialReference[] = [];
-  const pattern = /\{%\s*(partialdef|partial)\b([\s\S]*?)%\}/g;
+  const pattern = /\{%\s*(endpartialdef|partialdef|partial)\b([\s\S]*?)%\}/g;
+  const open: PartialDefinition[] = [];
   for (const match of visible.matchAll(pattern)) {
     const full = match[0];
     const command = match[1];
@@ -250,6 +254,15 @@ function scanPartials(text: string): Pick<ScanResult, "partialDefinitions" | "pa
     }
     const args = rawArgs.trim().split(/\s+/).filter(Boolean);
     const name = args[0];
+    if (command === "endpartialdef") {
+      const closing = open.pop();
+      if (closing !== undefined && name !== undefined) {
+        const endNameStart = match.index + full.indexOf(name, full.indexOf(command) + command.length);
+        closing.endNameStart = endNameStart;
+        closing.endNameEnd = endNameStart + name.length;
+      }
+      continue;
+    }
     if (name === undefined) {
       continue;
     }
@@ -263,7 +276,9 @@ function scanPartials(text: string): Pick<ScanResult, "partialDefinitions" | "pa
       tagEnd: match.index + full.length,
     };
     if (command === "partialdef") {
-      partialDefinitions.push({ ...common, inline: args.slice(1).includes("inline") });
+      const definition: PartialDefinition = { ...common, inline: args.slice(1).includes("inline") };
+      partialDefinitions.push(definition);
+      open.push(definition);
     } else {
       partialReferences.push(common);
     }
@@ -404,18 +419,32 @@ const PYTHON_TEMPLATE_ARGUMENTS: Readonly<Record<string, { position: number; key
 const EXPRESSION_CONTINUATION_WORDS = new Set(["if", "else", "or", "and", "for", "in", "is", "not"]);
 
 function isTemplateNameAssignment(tokens: PythonToken[], index: number, stack: PythonCallFrame[]): boolean {
-  const target = tokens[index - 2];
-  if (target?.type !== "identifier" || target.value !== "template_name" || tokens[index - 1]?.value !== "=") {
+  if (tokens[index - 1]?.value !== "=" || stack.length > 0) {
     return false;
   }
-  if (stack.length > 0 || tokens[index - 3]?.value === ".") {
+  const plain = tokens[index - 2];
+  const annotated = tokens[index - 4];
+  const isPlain = plain?.type === "identifier" && plain.value === "template_name";
+  const isAnnotated =
+    annotated?.type === "identifier" &&
+    annotated.value === "template_name" &&
+    tokens[index - 3]?.value === ":" &&
+    plain?.type === "identifier";
+  if (!isPlain && !isAnnotated) {
+    return false;
+  }
+  if (tokens[isPlain ? index - 3 : index - 5]?.value === ".") {
     return false;
   }
   const next = tokens[index + 1];
   if (next === undefined) {
     return true;
   }
-  return next.type === "identifier" && !EXPRESSION_CONTINUATION_WORDS.has(next.value);
+  if (next.type === "identifier") {
+    return !EXPRESSION_CONTINUATION_WORDS.has(next.value);
+  }
+  // A decorator starts the next statement. A bare string could be implicit concatenation.
+  return next.value === "@";
 }
 
 function templateReferenceFromString(token: PythonToken): TemplatePartialReference | undefined {
@@ -643,11 +672,18 @@ export function partialSpansByName(scan: ScanResult, name: string): PartialNameS
   return [
     ...scan.partialDefinitions
       .filter((definition) => definition.name === name)
-      .map((definition): PartialNameSpan => ({
-        start: definition.nameStart,
-        end: definition.nameEnd,
-        kind: "definition",
-      })),
+      .flatMap((definition): PartialNameSpan[] => [
+        { start: definition.nameStart, end: definition.nameEnd, kind: "definition" },
+        ...(definition.endNameStart === undefined || definition.endNameEnd === undefined
+          ? []
+          : [
+              {
+                start: definition.endNameStart,
+                end: definition.endNameEnd,
+                kind: "definition" as const,
+              },
+            ]),
+      ]),
     ...scan.partialReferences
       .filter((reference) => reference.name === name)
       .map((reference): PartialNameSpan => ({

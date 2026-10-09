@@ -87,3 +87,44 @@ test("renaming onto a name already defined in the target refuses", () => {
   const plan = planPartialUsages([taken], { selfPath: taken.path }, "result_card", "row");
   assert.deepEqual(plan, { kind: "error", message: "Partial 'row' is already defined in this template." });
 });
+
+test("collectPartialReferences lists uses even when the definition is duplicated", async () => {
+  const { collectPartialReferences } = await import("../partialRename.js");
+  const duplicated: PartialSourceFile = {
+    path: "/w/t/a.html",
+    languageId: "django-html",
+    text: `{% partialdef card %}x{% endpartialdef card %}{% partialdef card %}y{% endpartialdef %}{% partial card %}`,
+  };
+  const spans = collectPartialReferences([duplicated], { selfPath: duplicated.path }, "card");
+  assert.deepEqual(
+    spans.map((span) => `${span.kind}:${duplicated.text.slice(span.start, span.end)}`),
+    ["definition:card", "definition:card", "definition:card", "reference:card"],
+  );
+});
+
+test("collectPartialReferences works with no definition at all", async () => {
+  const { collectPartialReferences } = await import("../partialRename.js");
+  const spans = collectPartialReferences([page, view], { templateName: "results.html" }, "other");
+  assert.equal(spans.length, 1);
+});
+
+test("rename edits the endpartialdef name too", () => {
+  const file: PartialSourceFile = {
+    path: "/w/t/a.html",
+    languageId: "django-html",
+    text: `{% partialdef card %}x{% endpartialdef card %}`,
+  };
+  assert.deepEqual(slices(planPartialUsages([file], { selfPath: file.path }, "card", "tile"), [file]), [
+    "definition:card",
+    "definition:card",
+  ]);
+});
+
+test("createLineIndex handles LF, CRLF and CR", async () => {
+  const { createLineIndex } = await import("../partialRename.js");
+  const locate = createLineIndex("ab\r\ncd\nef\rgh");
+  assert.deepEqual(locate(0), { line: 0, character: 0 });
+  assert.deepEqual(locate(4), { line: 1, character: 0 });
+  assert.deepEqual(locate(7), { line: 2, character: 0 });
+  assert.deepEqual(locate(11), { line: 3, character: 1 });
+});
