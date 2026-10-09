@@ -16,9 +16,15 @@ import {
   versionsLabel,
 } from "./intellisense.js";
 import {
+  planPartialUsages,
+  type PartialSourceFile,
+  type PartialTarget,
+  type PartialUsage,
+  type PartialUsagePlan,
+} from "./partialRename.js";
+import {
   attributeAtOffset,
   partialAtOffset,
-  partialSpansByName,
   scanTemplatePartialReferences,
   tagAtOffset,
   templateNameReferenceAtOffset,
@@ -747,69 +753,191 @@ function provideHover(
   return undefined;
 }
 
+interface PartialSelection {
+  name: string;
+  start: number;
+  end: number;
+  target: PartialTarget;
+}
+
+function partialSelectionAt(document: vscode.TextDocument, offset: number): PartialSelection | undefined {
+  if (document.languageId === "django-html") {
+    const own = partialAtOffset(getScan(document), offset);
+    if (own !== undefined) {
+      return {
+        name: own.name,
+        start: own.nameStart,
+        end: own.nameEnd,
+        target: { selfPath: document.uri.path },
+      };
+    }
+  }
+  if (document.languageId !== "django-html" && document.languageId !== "python") {
+    return undefined;
+  }
+  const reference = templatePartialReferenceAtOffset(document.getText(), document.languageId, offset);
+  if (reference === undefined || reference.name === "") {
+    return undefined;
+  }
+  return {
+    name: reference.name,
+    start: reference.nameStart,
+    end: reference.nameEnd,
+    target: { templateName: reference.templateName },
+  };
+}
+
 function partialNameRange(
   document: vscode.TextDocument,
   position: vscode.Position,
 ): vscode.Range | undefined {
-  if (document.languageId !== "django-html") {
-    return undefined;
-  }
-  const scan = getScan(document);
-  const target = partialAtOffset(scan, document.offsetAt(position));
-  if (target === undefined) {
-    return undefined;
-  }
-  return new vscode.Range(document.positionAt(target.nameStart), document.positionAt(target.nameEnd));
+  const selection = partialSelectionAt(document, document.offsetAt(position));
+  return selection === undefined
+    ? undefined
+    : new vscode.Range(document.positionAt(selection.start), document.positionAt(selection.end));
 }
 
-function provideReferences(
+function excludeGlob(): string | undefined {
+  const patterns = new Set<string>();
+  for (const section of ["files", "search"]) {
+    const excludes = vscode.workspace.getConfiguration(section).get<Record<string, unknown>>("exclude") ?? {};
+    for (const [pattern, enabled] of Object.entries(excludes)) {
+      if (enabled === true) {
+        patterns.add(pattern);
+      }
+    }
+  }
+  return patterns.size === 0 ? undefined : `{${[...patterns].join(",")}}`;
+}
+
+/**
+ * Reads every workspace template and Python file that mentions `name`, preferring unsaved
+ * editor contents. `capped` means the file limit was hit, so the result may be incomplete.
+ */
+async function collectPartialSources(
+  name: string,
+  document: vscode.TextDocument,
+  token: vscode.CancellationToken,
+): Promise<{ files: PartialSourceFile[]; uris: Map<string, vscode.Uri>; capped: boolean }> {
+  const found = await vscode.workspace.findFiles(
+    "**/*.{html,py}",
+    excludeGlob(),
+    TEMPLATE_FINDFILES_LIMIT,
+    token,
+  );
+  const open = new Map(
+    vscode.workspace.textDocuments.map((candidate) => [candidate.uri.toString(), candidate]),
+  );
+  const uris = new Map<string, vscode.Uri>([[document.uri.path, document.uri]]);
+  const files: PartialSourceFile[] = [];
+  const decoder = new TextDecoder();
+  const read = async (uri: vscode.Uri): Promise<void> => {
+    const opened = open.get(uri.toString());
+    const text = opened?.getText() ?? decoder.decode(await vscode.workspace.fs.readFile(uri));
+    if (text.includes(name) || uri.path === document.uri.path) {
+      uris.set(uri.path, uri);
+      files.push({ path: uri.path, languageId: uri.path.endsWith(".py") ? "python" : "django-html", text });
+    }
+  };
+  await Promise.all(found.filter((uri) => uri.path !== document.uri.path).map(read));
+  files.push({
+    path: document.uri.path,
+    languageId: document.languageId === "python" ? "python" : "django-html",
+    text: document.getText(),
+  });
+  return { files, uris, capped: found.length >= TEMPLATE_FINDFILES_LIMIT };
+}
+
+async function planAtPosition(
+  document: vscode.TextDocument,
+  position: vscode.Position,
+  token: vscode.CancellationToken,
+  newName?: string,
+): Promise<
+  | { selection: PartialSelection; plan: PartialUsagePlan; uris: Map<string, vscode.Uri>; capped: boolean }
+  | undefined
+> {
+  const selection = partialSelectionAt(document, document.offsetAt(position));
+  if (selection === undefined) {
+    return undefined;
+  }
+  const { files, uris, capped } = await collectPartialSources(selection.name, document, token);
+  return {
+    selection,
+    plan: planPartialUsages(files, selection.target, selection.name, newName),
+    uris,
+    capped,
+  };
+}
+
+async function usageLocations(
+  spans: readonly PartialUsage[],
+  uris: Map<string, vscode.Uri>,
+): Promise<{ uri: vscode.Uri; range: vscode.Range; kind: PartialUsage["kind"] }[]> {
+  const documents = new Map<string, vscode.TextDocument>();
+  const result: { uri: vscode.Uri; range: vscode.Range; kind: PartialUsage["kind"] }[] = [];
+  for (const span of spans) {
+    const uri = uris.get(span.path);
+    if (uri === undefined) {
+      continue;
+    }
+    let opened = documents.get(span.path);
+    if (opened === undefined) {
+      opened = await vscode.workspace.openTextDocument(uri);
+      documents.set(span.path, opened);
+    }
+    result.push({
+      uri,
+      range: new vscode.Range(opened.positionAt(span.start), opened.positionAt(span.end)),
+      kind: span.kind,
+    });
+  }
+  return result;
+}
+
+async function provideReferences(
   document: vscode.TextDocument,
   position: vscode.Position,
   context: vscode.ReferenceContext,
-): vscode.Location[] | undefined {
-  if (document.languageId !== "django-html") {
+  token: vscode.CancellationToken,
+): Promise<vscode.Location[] | undefined> {
+  const planned = await planAtPosition(document, position, token);
+  if (planned === undefined || planned.plan.kind === "error") {
     return undefined;
   }
-  const scan = getScan(document);
-  const target = partialAtOffset(scan, document.offsetAt(position));
-  if (target === undefined) {
-    return undefined;
-  }
-  const spans = partialSpansByName(scan, target.name).filter(
-    (span) => context.includeDeclaration || span.kind !== "definition",
-  );
-  return spans.map(
-    (span) =>
-      new vscode.Location(
-        document.uri,
-        new vscode.Range(document.positionAt(span.start), document.positionAt(span.end)),
-      ),
-  );
+  const usages = await usageLocations(planned.plan.spans, planned.uris);
+  return usages
+    .filter((usage) => context.includeDeclaration || usage.kind !== "definition")
+    .map((usage) => new vscode.Location(usage.uri, usage.range));
 }
 
-function provideRenameEdits(
+async function provideRenameEdits(
   document: vscode.TextDocument,
   position: vscode.Position,
   newName: string,
-): vscode.WorkspaceEdit | undefined {
-  if (document.languageId !== "django-html") {
-    return undefined;
-  }
+  token: vscode.CancellationToken,
+): Promise<vscode.WorkspaceEdit | undefined> {
   if (!/^[\w-]+$/.test(newName)) {
     throw new Error("A Django partial name may only contain letters, numbers, underscores, and hyphens.");
   }
-  const scan = getScan(document);
-  const target = partialAtOffset(scan, document.offsetAt(position));
-  if (target === undefined) {
+  const planned = await planAtPosition(document, position, token, newName);
+  if (planned === undefined) {
     return undefined;
   }
-  const edit = new vscode.WorkspaceEdit();
-  for (const span of partialSpansByName(scan, target.name)) {
-    edit.replace(
-      document.uri,
-      new vscode.Range(document.positionAt(span.start), document.positionAt(span.end)),
-      newName,
+  if (planned.selection.name === newName) {
+    return new vscode.WorkspaceEdit();
+  }
+  if (planned.plan.kind === "error") {
+    throw new Error(planned.plan.message);
+  }
+  if (planned.capped) {
+    throw new Error(
+      `The workspace has more than ${TEMPLATE_FINDFILES_LIMIT} template and Python files, so rename cannot find every use safely.`,
     );
+  }
+  const edit = new vscode.WorkspaceEdit();
+  for (const usage of await usageLocations(planned.plan.spans, planned.uris)) {
+    edit.replace(usage.uri, usage.range, newName);
   }
   return edit;
 }
@@ -981,23 +1109,21 @@ export function activate(context: vscode.ExtensionContext): void {
       },
       { providedCodeActionKinds: [vscode.CodeActionKind.QuickFix] },
     ),
-    vscode.languages.registerReferenceProvider(
-      { language: "django-html" },
-      { provideReferences: (document, position, context) => provideReferences(document, position, context) },
-    ),
-    vscode.languages.registerRenameProvider(
-      { language: "django-html" },
-      {
-        provideRenameEdits: (document, position, newName) => provideRenameEdits(document, position, newName),
-        prepareRename: (document, position) => {
-          const range = partialNameRange(document, position);
-          if (range === undefined) {
-            throw new Error("Only Django partial names can be renamed here.");
-          }
-          return range;
-        },
+    vscode.languages.registerReferenceProvider(PARTIAL_SELECTOR, {
+      provideReferences: (document, position, context, token) =>
+        provideReferences(document, position, context, token),
+    }),
+    vscode.languages.registerRenameProvider(PARTIAL_SELECTOR, {
+      provideRenameEdits: (document, position, newName, token) =>
+        provideRenameEdits(document, position, newName, token),
+      prepareRename: (document, position) => {
+        const range = partialNameRange(document, position);
+        if (range === undefined) {
+          throw new Error("Only Django partial names can be renamed here.");
+        }
+        return range;
       },
-    ),
+    }),
     vscode.commands.registerCommand(COPY_EXAMPLE_COMMAND, copyExample),
     vscode.commands.registerCommand(OPEN_SETTINGS_COMMAND, () =>
       vscode.commands.executeCommand(
