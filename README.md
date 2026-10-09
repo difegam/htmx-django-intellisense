@@ -124,8 +124,9 @@ official HTMX 2 and HTMX 4 documentation.
 ### Diagnostics and quick fixes
 
 The extension reports misspelled HTMX attributes, deprecated attributes,
-invalid documented values, and unknown or duplicate Django partials. Each
-diagnostic offers a fix from the `Ctrl/Cmd+.` lightbulb.
+invalid documented values, and unknown or duplicate Django partials. Typos,
+deprecated attributes, invalid values, and unknown partials offer a fix from the
+`Ctrl/Cmd+.` lightbulb; duplicate partials and version mismatches are warnings only.
 
 <!-- cspell:ignore ture tirgger -->
 
