@@ -5,6 +5,13 @@ The project follows [Keep a Changelog](https://keepachangelog.com/) conventions 
 
 ## [Unreleased]
 
+### Added
+
+- Ctrl/Cmd+click and Go to Definition on the template path in `template.html#partial` references (Django `include` tags and Python) open the template file.
+- Find All References and Rename Symbol (F2) for Django partials now work across the workspace and from Python `#partial` strings, not only within one template. Rename refuses duplicate definitions, ambiguous matches across templates, name collisions, and oversized workspaces.
+- `template_name = "…#…"` class attributes and `as_view(template_name="…#…")` are recognised as partial references.
+- Quick fix "Rename duplicate to 'name_2'" for the `duplicate-partial` warning.
+
 ## [0.2.0] - 2026-10-09
 
 ### Added
