@@ -398,7 +398,25 @@ const PYTHON_TEMPLATE_ARGUMENTS: Readonly<Record<string, { position: number; key
   get_template: { position: 0, keyword: "template_name" },
   select_template: { position: 0, keyword: "template_name_list" },
   TemplateResponse: { position: 1, keyword: "template" },
+  as_view: { position: -1, keyword: "template_name" },
 };
+
+const EXPRESSION_CONTINUATION_WORDS = new Set(["if", "else", "or", "and", "for", "in", "is", "not"]);
+
+function isTemplateNameAssignment(tokens: PythonToken[], index: number, stack: PythonCallFrame[]): boolean {
+  const target = tokens[index - 2];
+  if (target?.type !== "identifier" || target.value !== "template_name" || tokens[index - 1]?.value !== "=") {
+    return false;
+  }
+  if (stack.length > 0 || tokens[index - 3]?.value === ".") {
+    return false;
+  }
+  const next = tokens[index + 1];
+  if (next === undefined) {
+    return true;
+  }
+  return next.type === "identifier" && !EXPRESSION_CONTINUATION_WORDS.has(next.value);
+}
 
 function templateReferenceFromString(token: PythonToken): TemplatePartialReference | undefined {
   if (
@@ -471,6 +489,13 @@ function scanPythonTemplatePartials(text: string): TemplatePartialReference[] {
       continue;
     }
 
+    if (isTemplateNameAssignment(tokens, index, stack)) {
+      const assigned = templateReferenceFromString(token);
+      if (assigned !== undefined) {
+        references.push(assigned);
+      }
+      continue;
+    }
     const previous = tokens[index - 1]?.value;
     const next = tokens[index + 1]?.value;
     if (!["(", "[", ",", "="].includes(previous ?? "") || ![")", "]", ","].includes(next ?? "")) {

@@ -163,3 +163,26 @@ test("template-name lookup finds the reference under the cursor", () => {
   assert.equal(templatePartialReferenceAtOffset(html, "django-html", offset), undefined);
   assert.equal(templateNameReferenceAtOffset(html, "django-html", offset)?.name, "result-card");
 });
+
+test("scanner finds class-based view template_name partials", () => {
+  const text = `
+class ResultsView(TemplateView):
+    template_name = "results.html#result_card"
+    other = "ignored.html#nope"
+
+urlpatterns = [
+    path("a/", TemplateView.as_view(template_name="results.html#row")),
+    path("b/", TemplateView.as_view(template_name=f"{x}.html#dyn")),
+]
+class Dynamic(TemplateView):
+    template_name = "base.html#a" if flag else "other.html#b"
+    template_name = "x.html#c" + suffix
+`;
+  assert.deepEqual(
+    scanTemplatePartialReferences(text, "python").map(({ templateName, name }) => [templateName, name]),
+    [
+      ["results.html", "result_card"],
+      ["results.html", "row"],
+    ],
+  );
+});
