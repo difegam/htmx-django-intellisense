@@ -42,6 +42,8 @@ export interface PartialReference {
 
 export interface TemplatePartialReference {
   templateName: string;
+  templateNameStart: number;
+  templateNameEnd: number;
   name: string;
   nameStart: number;
   nameEnd: number;
@@ -290,6 +292,8 @@ function scanDjangoTemplatePartials(text: string): TemplatePartialReference[] {
     const nameStart = templateNameStart + templateName.length + 1;
     references.push({
       templateName,
+      templateNameStart,
+      templateNameEnd: templateNameStart + templateName.length,
       name,
       nameStart,
       nameEnd: nameStart + name.length,
@@ -416,6 +420,8 @@ function templateReferenceFromString(token: PythonToken): TemplatePartialReferen
   const nameStart = token.contentStart + hash + 1;
   return {
     templateName: token.value.slice(0, hash).replace(/\\([\\"'])/g, "$1"),
+    templateNameStart: token.contentStart,
+    templateNameEnd: token.contentStart + hash,
     name,
     nameStart,
     nameEnd: nameStart + name.length,
@@ -517,6 +523,16 @@ export function templatePartialReferenceAtOffset(
 ): TemplatePartialReference | undefined {
   return scanTemplatePartialReferences(text, languageId).find(
     (reference) => offset >= reference.nameStart && offset <= reference.nameEnd,
+  );
+}
+
+export function templateNameReferenceAtOffset(
+  text: string,
+  languageId: "django-html" | "python",
+  offset: number,
+): TemplatePartialReference | undefined {
+  return scanTemplatePartialReferences(text, languageId).find(
+    (reference) => offset >= reference.templateNameStart && offset <= reference.templateNameEnd,
   );
 }
 

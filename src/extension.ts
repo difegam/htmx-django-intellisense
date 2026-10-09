@@ -19,7 +19,9 @@ import {
   attributeAtOffset,
   partialAtOffset,
   partialSpansByName,
+  scanTemplatePartialReferences,
   tagAtOffset,
+  templateNameReferenceAtOffset,
   templatePartialReferenceAtOffset,
   type AttributeToken,
   type PartialDefinition,
@@ -244,6 +246,7 @@ const templatePartialCache = new Map<string, ResolvedPartialDefinition[]>();
 
 function clearTemplatePartialCache(): void {
   templatePartialCache.clear();
+  templateFileCache.clear();
 }
 
 function escapeGlobSegment(value: string): string {
@@ -258,17 +261,19 @@ function escapeGlobSegment(value: string): string {
   });
 }
 
-async function resolveTemplatePartials(
+const templateFileCache = new Map<string, vscode.Uri[]>();
+
+async function resolveTemplateFiles(
   templateName: string,
   token: vscode.CancellationToken,
-): Promise<ResolvedPartialDefinition[]> {
+): Promise<vscode.Uri[]> {
   const normalized = templateName.replace(/\\/g, "/").replace(/^(\.\/)+/, "");
   const parts = normalized.split("/");
   const basename = parts.at(-1);
   if (basename === undefined || basename === "" || normalized.startsWith("/") || parts.includes("..")) {
     return [];
   }
-  const cached = templatePartialCache.get(normalized);
+  const cached = templateFileCache.get(normalized);
   if (cached !== undefined) {
     return cached;
   }
@@ -282,8 +287,23 @@ async function resolveTemplatePartials(
   const matches = uris
     .filter((uri) => uri.path === normalized || uri.path.endsWith(suffix))
     .sort((left, right) => left.toString().localeCompare(right.toString()));
+  if (!token.isCancellationRequested) {
+    templateFileCache.set(normalized, matches);
+  }
+  return matches;
+}
+
+async function resolveTemplatePartials(
+  templateName: string,
+  token: vscode.CancellationToken,
+): Promise<ResolvedPartialDefinition[]> {
+  const normalized = templateName.replace(/\\/g, "/").replace(/^(\.\/)+/, "");
+  const cached = templatePartialCache.get(normalized);
+  if (cached !== undefined) {
+    return cached;
+  }
   const resolved: ResolvedPartialDefinition[] = [];
-  for (const uri of matches) {
+  for (const uri of await resolveTemplateFiles(templateName, token)) {
     if (token.isCancellationRequested) {
       return [];
     }
@@ -363,6 +383,13 @@ async function provideDefinitions(
   if (document.languageId !== "django-html" && document.languageId !== "python") {
     return undefined;
   }
+  const templateReference = templateNameReferenceAtOffset(text, document.languageId, offset);
+  if (templateReference !== undefined && offset < templateReference.nameStart - 1) {
+    const files = await resolveTemplateFiles(templateReference.templateName, token);
+    return files.length === 0
+      ? undefined
+      : files.map((uri) => new vscode.Location(uri, new vscode.Position(0, 0)));
+  }
   const reference = templatePartialReferenceAtOffset(text, document.languageId, offset);
   if (reference === undefined || reference.name === "") {
     return undefined;
@@ -381,6 +408,41 @@ async function provideDefinitions(
         ),
     );
   return locations.length === 0 ? undefined : locations;
+}
+
+const TEMPLATE_LINK_NAMES = new WeakMap<vscode.DocumentLink, string>();
+
+function provideTemplateLinks(document: vscode.TextDocument): vscode.DocumentLink[] {
+  if (document.languageId !== "django-html" && document.languageId !== "python") {
+    return [];
+  }
+  return scanTemplatePartialReferences(document.getText(), document.languageId).map((reference) => {
+    const link = new vscode.DocumentLink(
+      new vscode.Range(
+        document.positionAt(reference.templateNameStart),
+        document.positionAt(reference.templateNameEnd),
+      ),
+    );
+    link.tooltip = "Open template";
+    TEMPLATE_LINK_NAMES.set(link, reference.templateName);
+    return link;
+  });
+}
+
+async function resolveTemplateLink(
+  link: vscode.DocumentLink,
+  token: vscode.CancellationToken,
+): Promise<vscode.DocumentLink | undefined> {
+  const templateName = TEMPLATE_LINK_NAMES.get(link);
+  if (templateName === undefined) {
+    return undefined;
+  }
+  const [first] = await resolveTemplateFiles(templateName, token);
+  if (first === undefined) {
+    return undefined;
+  }
+  link.target = first;
+  return link;
 }
 
 function valueCompletionItems(
@@ -904,6 +966,10 @@ export function activate(context: vscode.ExtensionContext): void {
     ),
     vscode.languages.registerDefinitionProvider(PARTIAL_SELECTOR, {
       provideDefinition: (document, position, token) => provideDefinitions(document, position, token),
+    }),
+    vscode.languages.registerDocumentLinkProvider(PARTIAL_SELECTOR, {
+      provideDocumentLinks: (document) => provideTemplateLinks(document),
+      resolveDocumentLink: (link, token) => resolveTemplateLink(link, token),
     }),
     vscode.languages.registerHoverProvider(DOCUMENT_SELECTOR, {
       provideHover: (document, position) => provideHover(catalog, document, position),

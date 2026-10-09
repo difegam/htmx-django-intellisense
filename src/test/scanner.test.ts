@@ -6,6 +6,7 @@ import {
   scanDocument,
   scanTemplatePartialReferences,
   tagAtOffset,
+  templateNameReferenceAtOffset,
   templatePartialReferenceAtOffset,
 } from "../scanner.js";
 
@@ -140,4 +141,25 @@ render(request, "implicit.html#" "joined")
 render(request, "formatted.html#partial".format())
 render(request, "unterminated.html#partial)`;
   assert.deepEqual(scanTemplatePartialReferences(text, "python"), []);
+});
+
+test("template partial references expose the template-name span", () => {
+  const html = `{% include "cards/item.html#result-card" %}`;
+  const [htmlRef] = scanTemplatePartialReferences(html, "django-html");
+  assert.equal(html.slice(htmlRef!.templateNameStart, htmlRef!.templateNameEnd), "cards/item.html");
+
+  const py = `render(request, 'authors.html#card')\nget_template(r"a/b.html#row")`;
+  assert.deepEqual(
+    scanTemplatePartialReferences(py, "python").map((ref) =>
+      py.slice(ref.templateNameStart, ref.templateNameEnd),
+    ),
+    ["authors.html", "a/b.html"],
+  );
+});
+
+test("template-name lookup finds the reference under the cursor", () => {
+  const html = `{% include "cards/item.html#result-card" %}`;
+  const offset = html.indexOf("item");
+  assert.equal(templatePartialReferenceAtOffset(html, "django-html", offset), undefined);
+  assert.equal(templateNameReferenceAtOffset(html, "django-html", offset)?.name, "result-card");
 });

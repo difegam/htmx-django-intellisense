@@ -371,6 +371,21 @@ export async function run(): Promise<void> {
     assert.equal(new Set(pythonDefinitions.map((location) => locationUri(location).toString())).size, 2);
   }
 
+  for (const linked of [includeDocument, pythonDocument]) {
+    const linkText = linked.getText();
+    const templateOffset = linkText.indexOf("cards.html#") + 1;
+    const fileTargets = await definitions(linked, templateOffset);
+    assert.equal(new Set(fileTargets.map((location) => locationUri(location).toString())).size, 2);
+    assert.ok(fileTargets.every((location) => locationUri(location).path.endsWith("/shared/cards.html")));
+    const links = await vscode.commands.executeCommand<vscode.DocumentLink[]>(
+      "vscode.executeLinkProvider",
+      linked.uri,
+      100,
+    );
+    const link = links.find((candidate) => candidate.range.contains(linked.positionAt(templateOffset)));
+    assert.ok(link?.target?.path.endsWith("/shared/cards.html"), "template name links to the file");
+  }
+
   const cardsUri = vscode.Uri.joinPath(workspace.uri, "apps/a/templates/shared/cards.html");
   const cardsDocument = await vscode.workspace.openTextDocument(cardsUri);
   const cardsEditor = await vscode.window.showTextDocument(cardsDocument);
