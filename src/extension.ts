@@ -15,7 +15,7 @@ import {
   valuesForMode,
   versionsLabel,
 } from "./intellisense.js";
-import { buildExcludeGlob, DEFAULT_SOURCE_EXCLUDES } from "./globs.js";
+import { buildExcludeGlob, DEFAULT_SOURCE_EXCLUDES, escapeGlobSegment } from "./globs.js";
 import {
   collectPartialReferences,
   createLineIndex,
@@ -258,18 +258,6 @@ const templatePartialCache = new Map<string, ResolvedPartialDefinition[]>();
 function clearTemplatePartialCache(): void {
   templatePartialCache.clear();
   templateFileCache.clear();
-}
-
-function escapeGlobSegment(value: string): string {
-  return value.replace(/[?*\[\]{}]/g, (character) => {
-    if (character === "[") {
-      return "[[]";
-    }
-    if (character === "]") {
-      return "[]]";
-    }
-    return `[${character}]`;
-  });
 }
 
 const templateFileCache = new Map<string, vscode.Uri[]>();
@@ -815,11 +803,11 @@ async function sourceExcludeGlob(token: vscode.CancellationToken): Promise<strin
   }
   // Virtual environments with any name are marked by a pyvenv.cfg file.
   const markers = await vscode.workspace.findFiles("**/pyvenv.cfg", buildExcludeGlob(patterns), 50, token);
-  for (const marker of markers) {
+  const environments = markers.map((marker) => {
     const directory = vscode.workspace.asRelativePath(vscode.Uri.joinPath(marker, ".."), false);
-    patterns.add(`${directory.split("/").map(escapeGlobSegment).join("/")}/**`);
-  }
-  return buildExcludeGlob(patterns);
+    return `${directory.split("/").map(escapeGlobSegment).join("/")}/**`;
+  });
+  return buildExcludeGlob(patterns, environments);
 }
 
 /**

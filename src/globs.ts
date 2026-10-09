@@ -37,9 +37,28 @@ export function expandBraces(pattern: string): string[] {
   return alternatives.flatMap((alternative) => expandBraces(`${prefix}${alternative}${suffix}`));
 }
 
-/** Combines glob patterns into the one string `findFiles` takes as its `exclude`. */
-export function buildExcludeGlob(patterns: Iterable<string>): string | undefined {
-  const flattened = new Set([...patterns].flatMap(expandBraces));
+/** Escapes glob metacharacters (including the brace-group comma) in one literal path segment. */
+export function escapeGlobSegment(value: string): string {
+  return value.replace(/[?*[\]{},]/g, (character) => {
+    if (character === "[") {
+      return "[[]";
+    }
+    if (character === "]") {
+      return "[]]";
+    }
+    return `[${character}]`;
+  });
+}
+
+/**
+ * Combines glob patterns into the one string `findFiles` takes as its `exclude`. `literals`
+ * are already-escaped patterns and are never brace-expanded.
+ */
+export function buildExcludeGlob(
+  patterns: Iterable<string>,
+  literals: Iterable<string> = [],
+): string | undefined {
+  const flattened = new Set([...[...patterns].flatMap(expandBraces), ...literals]);
   if (flattened.size === 0) {
     return undefined;
   }
