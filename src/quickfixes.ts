@@ -131,6 +131,28 @@ function unknownPartialFixes(
   return fixes;
 }
 
+function duplicatePartialFixes(
+  diagnostic: DiagnosticLike,
+  index: number,
+  text: string,
+  scan: ScanResult,
+): QuickFix[] {
+  const name = text.slice(diagnostic.start, diagnostic.end);
+  const taken = new Set(scan.partialDefinitions.map((definition) => definition.name));
+  let suffix = 2;
+  while (taken.has(`${name}_${suffix}`)) {
+    suffix++;
+  }
+  const candidate = `${name}_${suffix}`;
+  return [
+    {
+      title: `Rename duplicate to '${candidate}'`,
+      diagnosticIndex: index,
+      edits: [{ start: diagnostic.start, end: diagnostic.end, newText: candidate }],
+    },
+  ];
+}
+
 /**
  * Produce quick-fix descriptors for the extension's own diagnostics. Kept free of the
  * `vscode` API so the mapping logic can be unit tested; `extension.ts` adapts the
@@ -156,6 +178,9 @@ export function computeQuickFixes(
         break;
       case "unknown-partial":
         fixes.push(...unknownPartialFixes(diagnostic, index, text, scan));
+        break;
+      case "duplicate-partial":
+        fixes.push(...duplicatePartialFixes(diagnostic, index, text, scan));
         break;
       default:
         break;
