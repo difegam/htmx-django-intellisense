@@ -1,0 +1,4 @@
+# Deliberate misspellings shown by the diagnostics demo (README, docs/assets/demo/diagnostics.gif).
+[default.extend-words]
+ture = "ture"
+tirgger = "tirgger"
