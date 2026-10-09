@@ -79,7 +79,14 @@ export function planPartialUsages(
   }
 
   const targetFile = templates.find((file) => file.path === targetPath);
-  if (targetFile === undefined || defines(targetFile, name) === 0) {
+  // A self target may legitimately lack a definition yet (typo, work in progress); its
+  // local uses are still renamed. Only a template with no use at all has nothing to rename.
+  const orphan =
+    target.selfPath !== undefined &&
+    targetFile !== undefined &&
+    defines(targetFile, name) === 0 &&
+    partialSpansByName(scanOf(targetFile), name).length > 0;
+  if (targetFile === undefined || (defines(targetFile, name) === 0 && !orphan)) {
     return { kind: "error", message: `No definition of partial '${name}' was found.` };
   }
   if (defines(targetFile, name) > 1) {
@@ -148,9 +155,10 @@ export function collectPartialReferences(
     }
   }
   for (const file of files) {
-    const local = definingPaths.includes(file.path)
-      ? partialSpansByName(scanDocument(file.text), name).filter((span) => span.kind === "reference")
-      : [];
+    const local =
+      definingPaths.includes(file.path) || file.path === target.selfPath
+        ? partialSpansByName(scanDocument(file.text), name).filter((span) => span.kind === "reference")
+        : [];
     spans.push(
       ...local.map((span) => ({ path: file.path, start: span.start, end: span.end, kind: span.kind })),
     );
@@ -161,8 +169,10 @@ export function collectPartialReferences(
       const matches =
         definingPaths.length > 0
           ? definingPaths.some((path) => matchesTemplate(path, reference.templateName))
-          : target.templateName !== undefined &&
-            normalizeTemplateName(reference.templateName) === normalizeTemplateName(target.templateName);
+          : target.selfPath !== undefined
+            ? matchesTemplate(target.selfPath, reference.templateName)
+            : target.templateName !== undefined &&
+              normalizeTemplateName(reference.templateName) === normalizeTemplateName(target.templateName);
       if (matches) {
         spans.push({
           path: file.path,

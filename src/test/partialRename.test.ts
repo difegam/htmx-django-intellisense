@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { normalizeTemplateName, planPartialUsages, type PartialSourceFile } from "../partialRename.js";
+import {
+  collectPartialReferences,
+  normalizeTemplateName,
+  planPartialUsages,
+  type PartialSourceFile,
+} from "../partialRename.js";
 
 const results: PartialSourceFile = {
   path: "/w/app/templates/results.html",
@@ -127,4 +132,28 @@ test("createLineIndex handles LF, CRLF and CR", async () => {
   assert.deepEqual(locate(4), { line: 1, character: 0 });
   assert.deepEqual(locate(7), { line: 2, character: 0 });
   assert.deepEqual(locate(11), { line: 3, character: 1 });
+});
+
+test("a template without a definition still renames and lists its local partial uses", () => {
+  const orphan: PartialSourceFile = {
+    path: "/w/app/templates/orphan.html",
+    languageId: "django-html",
+    text: `{% partial card %}\n{% partial card %}`,
+  };
+  const caller: PartialSourceFile = {
+    path: "/w/app/views.py",
+    languageId: "python",
+    text: `render(request, "orphan.html#card")`,
+  };
+  const files = [orphan, caller];
+  const plan = planPartialUsages(files, { selfPath: orphan.path }, "card", "tile");
+  assert.deepEqual(slices(plan, files), ["reference:card", "reference:card", "reference:card"]);
+  assert.equal(collectPartialReferences(files, { selfPath: orphan.path }, "card").length, 3);
+  const nothing = planPartialUsages(
+    [{ ...orphan, text: "plain" }],
+    { selfPath: orphan.path },
+    "card",
+    "tile",
+  );
+  assert.equal(nothing.kind, "error");
 });
