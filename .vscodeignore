@@ -50,3 +50,4 @@ eslint.config.mjs
 # Media/demo assets not required for runtime
 demo-1.png
 demo-2.png
+_typos.toml

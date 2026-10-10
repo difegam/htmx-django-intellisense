@@ -50,8 +50,8 @@ nav = [
 
 [project.theme]
 variant = "modern"
-logo = "assets/brand/icon.png"
-favicon = "assets/brand/icon.png"
+logo = "assets/mark.svg"
+favicon = "assets/favicon.svg"
 features = [
     "content.action.edit",
     "content.action.view",
