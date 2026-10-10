@@ -11,6 +11,10 @@ export interface PartialSourceFile {
   text: string;
 }
 
+export function isPartialLanguage(languageId: string): languageId is PartialSourceFile["languageId"] {
+  return languageId === "django-html" || languageId === "python";
+}
+
 export interface PartialUsage {
   path: string;
   start: number;

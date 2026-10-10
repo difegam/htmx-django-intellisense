@@ -19,6 +19,7 @@ import { buildExcludeGlob, DEFAULT_SOURCE_EXCLUDES, escapeGlobSegment } from "./
 import {
   collectPartialReferences,
   createLineIndex,
+  isPartialLanguage,
   matchesTemplate,
   isResolvableTemplateName,
   normalizeTemplateName,
@@ -333,7 +334,7 @@ async function templatePartialCompletionItems(
   offset: number,
   token: vscode.CancellationToken,
 ): Promise<vscode.CompletionItem[] | undefined> {
-  if (document.languageId !== "django-html" && document.languageId !== "python") {
+  if (!isPartialLanguage(document.languageId)) {
     return undefined;
   }
   const reference = templatePartialReferenceAtOffset(document.getText(), document.languageId, offset);
@@ -388,7 +389,7 @@ async function provideDefinitions(
         );
     }
   }
-  if (document.languageId !== "django-html" && document.languageId !== "python") {
+  if (!isPartialLanguage(document.languageId)) {
     return undefined;
   }
   const references = scanTemplatePartialReferences(text, document.languageId);
@@ -426,7 +427,7 @@ async function provideDefinitions(
 const TEMPLATE_LINK_NAMES = new WeakMap<vscode.DocumentLink, string>();
 
 function provideTemplateLinks(document: vscode.TextDocument): vscode.DocumentLink[] {
-  if (document.languageId !== "django-html" && document.languageId !== "python") {
+  if (!isPartialLanguage(document.languageId)) {
     return [];
   }
   return scanTemplatePartialReferences(document.getText(), document.languageId).map((reference) => {
@@ -779,7 +780,7 @@ function partialSelectionAt(document: vscode.TextDocument, offset: number): Part
       };
     }
   }
-  if (document.languageId !== "django-html" && document.languageId !== "python") {
+  if (!isPartialLanguage(document.languageId)) {
     return undefined;
   }
   const reference = templatePartialReferenceAtOffset(document.getText(), document.languageId, offset);
@@ -855,9 +856,12 @@ async function forEachLimited<T>(
   await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
 }
 
+interface WorkspaceSourceFile extends PartialSourceFile {
+  uri: vscode.Uri;
+}
+
 interface PartialSources {
-  files: PartialSourceFile[];
-  uris: Map<string, vscode.Uri>;
+  files: WorkspaceSourceFile[];
   /** The file limit was hit, so only the current document was read. */
   capped: boolean;
   /** Files that could not be scanned, so the result may be incomplete. */
@@ -875,12 +879,12 @@ async function collectPartialSources(
   target: PartialTarget,
   token: vscode.CancellationToken,
 ): Promise<PartialSources> {
-  const current: PartialSourceFile = {
+  const current: WorkspaceSourceFile = {
+    uri: document.uri,
     path: document.uri.path,
     languageId: document.languageId === "python" ? "python" : "django-html",
     text: document.getText(),
   };
-  const uris = new Map<string, vscode.Uri>([[document.uri.path, document.uri]]);
   const exclude = await sourceExcludeGlob(token);
   // A template with another extension is still found by name when resolving a template target,
   // with the same excludes so templates in virtual environments stay out.
@@ -891,14 +895,14 @@ async function collectPartialSources(
       : findTemplateUris(normalizeTemplateName(target.templateName), exclude, token),
   ]);
   if (found.length >= TEMPLATE_FINDFILES_LIMIT) {
-    return { files: [current], uris, capped: true, incomplete: 0 };
+    return { files: [current], capped: true, incomplete: 0 };
   }
   // Open buffers replace the disk contents for files already discovered in the workspace.
   const candidates = new Map<string, vscode.Uri>([...found, ...named].map((uri) => [uri.toString(), uri]));
   const open = new Map(
     vscode.workspace.textDocuments.map((candidate) => [candidate.uri.toString(), candidate]),
   );
-  const files: PartialSourceFile[] = [];
+  const files: WorkspaceSourceFile[] = [];
   let incomplete = 0;
   const decoder = new TextDecoder();
   await forEachLimited(
@@ -918,8 +922,8 @@ async function collectPartialSources(
           text = decoder.decode(await vscode.workspace.fs.readFile(uri));
         }
         if (text.includes(name)) {
-          uris.set(uri.path, uri);
           files.push({
+            uri,
             path: uri.path,
             languageId: uri.path.endsWith(".py") ? "python" : "django-html",
             text,
@@ -934,7 +938,7 @@ async function collectPartialSources(
     },
   );
   files.push(current);
-  return { files, uris, capped: false, incomplete };
+  return { files, capped: false, incomplete };
 }
 
 /** Why `sources` may miss some uses, or `undefined` when every workspace file was scanned. */
@@ -951,29 +955,31 @@ function incompleteSourcesReason(
   return undefined;
 }
 
+interface UsageLocation {
+  uri: vscode.Uri;
+  range: vscode.Range;
+  kind: PartialUsage["kind"];
+}
+
 /** Maps usage offsets to ranges using the text already read, so no document is opened. */
-function usageLocations(
-  spans: readonly PartialUsage[],
-  { uris, files }: PartialSources,
-): { uri: vscode.Uri; range: vscode.Range; kind: PartialUsage["kind"] }[] {
-  const texts = new Map(files.map((file) => [file.path, file.text]));
+function usageLocations(spans: readonly PartialUsage[], { files }: PartialSources): UsageLocation[] {
+  const byPath = new Map(files.map((file) => [file.path, file]));
   const indexes = new Map<string, ReturnType<typeof createLineIndex>>();
-  const result: { uri: vscode.Uri; range: vscode.Range; kind: PartialUsage["kind"] }[] = [];
+  const result: UsageLocation[] = [];
   for (const span of spans) {
-    const uri = uris.get(span.path);
-    const text = texts.get(span.path);
-    if (uri === undefined || text === undefined) {
+    const file = byPath.get(span.path);
+    if (file === undefined) {
       continue;
     }
     let locate = indexes.get(span.path);
     if (locate === undefined) {
-      locate = createLineIndex(text);
+      locate = createLineIndex(file.text);
       indexes.set(span.path, locate);
     }
     const start = locate(span.start);
     const end = locate(span.end);
     result.push({
-      uri,
+      uri: file.uri,
       range: new vscode.Range(start.line, start.character, end.line, end.character),
       kind: span.kind,
     });
