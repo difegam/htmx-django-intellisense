@@ -2,6 +2,7 @@ import {
   partialSpansByName,
   scanDocument,
   scanTemplatePartialReferences,
+  type PartialNameSpan,
   type ScanResult,
 } from "./scanner.js";
 
@@ -33,6 +34,22 @@ export function matchesTemplate(path: string, templateName: string): boolean {
   return path === normalized || path.endsWith(`/${normalized}`);
 }
 
+function createScanCache(): (file: PartialSourceFile) => ScanResult {
+  const scans = new Map<string, ScanResult>();
+  return (file) => {
+    let scan = scans.get(file.path);
+    if (scan === undefined) {
+      scan = scanDocument(file.text);
+      scans.set(file.path, scan);
+    }
+    return scan;
+  };
+}
+
+function toUsage(path: string, span: PartialNameSpan): PartialUsage {
+  return { path, start: span.start, end: span.end, kind: span.kind };
+}
+
 /**
  * Collects every usage of a Django partial across the supplied files, or explains why a
  * rename must be refused. Pure so the duplicate and ambiguity rules can be unit tested.
@@ -43,15 +60,7 @@ export function planPartialUsages(
   name: string,
   newName?: string,
 ): PartialUsagePlan {
-  const scans = new Map<string, ScanResult>();
-  const scanOf = (file: PartialSourceFile): ScanResult => {
-    let scan = scans.get(file.path);
-    if (scan === undefined) {
-      scan = scanDocument(file.text);
-      scans.set(file.path, scan);
-    }
-    return scan;
-  };
+  const scanOf = createScanCache();
   const templates = files.filter((file) => file.languageId === "django-html");
   const defines = (file: PartialSourceFile, partial: string): number =>
     scanOf(file).partialDefinitions.filter((definition) => definition.name === partial).length;
@@ -99,12 +108,9 @@ export function planPartialUsages(
     return { kind: "error", message: `Partial '${newName}' is already defined in this template.` };
   }
 
-  const spans: PartialUsage[] = partialSpansByName(scanOf(targetFile), name).map((span) => ({
-    path: targetPath,
-    start: span.start,
-    end: span.end,
-    kind: span.kind,
-  }));
+  const spans: PartialUsage[] = partialSpansByName(scanOf(targetFile), name).map((span) =>
+    toUsage(targetPath, span),
+  );
   for (const file of files) {
     for (const reference of scanTemplatePartialReferences(file.text, file.languageId)) {
       if (reference.name !== name || !matchesTemplate(targetPath, reference.templateName)) {
@@ -133,15 +139,7 @@ export function collectPartialReferences(
 ): PartialUsage[] {
   const spans: PartialUsage[] = [];
   const definingPaths: string[] = [];
-  const scans = new Map<string, ScanResult>();
-  const scanOf = (file: PartialSourceFile): ScanResult => {
-    let scan = scans.get(file.path);
-    if (scan === undefined) {
-      scan = scanDocument(file.text);
-      scans.set(file.path, scan);
-    }
-    return scan;
-  };
+  const scanOf = createScanCache();
   for (const file of files) {
     if (file.languageId !== "django-html") {
       continue;
@@ -153,12 +151,12 @@ export function collectPartialReferences(
     if (!isTarget) {
       continue;
     }
-    const own = partialSpansByName(scanOf(file), name).filter((span) => span.kind === "definition");
+    const own = partialSpansByName(scanOf(file), name).filter(
+      (span) => span.kind === "definition" && span.isEndTag !== true,
+    );
     if (own.length > 0) {
       definingPaths.push(file.path);
-      spans.push(
-        ...own.map((span) => ({ path: file.path, start: span.start, end: span.end, kind: span.kind })),
-      );
+      spans.push(...own.map((span) => toUsage(file.path, span)));
     }
   }
   for (const file of files) {
@@ -166,9 +164,7 @@ export function collectPartialReferences(
       definingPaths.includes(file.path) || file.path === target.selfPath
         ? partialSpansByName(scanOf(file), name).filter((span) => span.kind === "reference")
         : [];
-    spans.push(
-      ...local.map((span) => ({ path: file.path, start: span.start, end: span.end, kind: span.kind })),
-    );
+    spans.push(...local.map((span) => toUsage(file.path, span)));
     for (const reference of scanTemplatePartialReferences(file.text, file.languageId)) {
       if (reference.name !== name) {
         continue;

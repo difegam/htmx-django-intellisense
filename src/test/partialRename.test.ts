@@ -103,7 +103,7 @@ test("collectPartialReferences lists uses even when the definition is duplicated
   const spans = collectPartialReferences([duplicated], { selfPath: duplicated.path }, "card");
   assert.deepEqual(
     spans.map((span) => `${span.kind}:${duplicated.text.slice(span.start, span.end)}`),
-    ["definition:card", "definition:card", "definition:card", "reference:card"],
+    ["definition:card", "definition:card", "reference:card"],
   );
 });
 
@@ -122,6 +122,17 @@ test("rename edits the endpartialdef name too", () => {
   assert.deepEqual(slices(planPartialUsages([file], { selfPath: file.path }, "card", "tile"), [file]), [
     "definition:card",
     "definition:card",
+  ]);
+});
+
+test("rename ignores an endpartialdef whose name does not match its partialdef", () => {
+  const file: PartialSourceFile = {
+    path: "/w/t/a.html",
+    languageId: "django-html",
+    text: `{% partialdef a %}{% partialdef b %}{% endpartialdef a %}{% endpartialdef a %}`,
+  };
+  assert.deepEqual(slices(planPartialUsages([file], { selfPath: file.path }, "b", "c"), [file]), [
+    "definition:b",
   ]);
 });
 

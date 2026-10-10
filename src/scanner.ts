@@ -256,7 +256,7 @@ function scanPartials(text: string): Pick<ScanResult, "partialDefinitions" | "pa
     const name = args[0];
     if (command === "endpartialdef") {
       const closing = open.pop();
-      if (closing !== undefined && name !== undefined) {
+      if (closing !== undefined && name !== undefined && name === closing.name) {
         const endNameStart = match.index + full.indexOf(name, full.indexOf(command) + command.length);
         closing.endNameStart = endNameStart;
         closing.endNameEnd = endNameStart + name.length;
@@ -696,6 +696,8 @@ export function partialAtOffset(
 
 export interface PartialNameSpan extends Span {
   kind: "definition" | "reference";
+  /** The name on an `endpartialdef` tag, which mirrors its definition. */
+  isEndTag?: true;
 }
 
 /** All same-file definition and reference name spans that share a partial name. */
@@ -712,6 +714,7 @@ export function partialSpansByName(scan: ScanResult, name: string): PartialNameS
                 start: definition.endNameStart,
                 end: definition.endNameEnd,
                 kind: "definition" as const,
+                isEndTag: true as const,
               },
             ]),
       ]),
