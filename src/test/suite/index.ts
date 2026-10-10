@@ -371,6 +371,65 @@ export async function run(): Promise<void> {
     assert.equal(new Set(pythonDefinitions.map((location) => locationUri(location).toString())).size, 2);
   }
 
+  for (const linked of [includeDocument, pythonDocument]) {
+    const linkText = linked.getText();
+    const templateOffset = linkText.indexOf("cards.html#") + 1;
+    const fileTargets = await definitions(linked, templateOffset);
+    assert.equal(new Set(fileTargets.map((location) => locationUri(location).toString())).size, 2);
+    assert.ok(fileTargets.every((location) => locationUri(location).path.endsWith("/shared/cards.html")));
+    const links = await vscode.commands.executeCommand<vscode.DocumentLink[]>(
+      "vscode.executeLinkProvider",
+      linked.uri,
+      100,
+    );
+    const link = links.find((candidate) => candidate.range.contains(linked.positionAt(templateOffset)));
+    assert.ok(link?.target?.path.endsWith("/shared/cards.html"), "template name links to the file");
+  }
+
+  const resultsViews = await vscode.workspace.openTextDocument(
+    vscode.Uri.joinPath(workspace.uri, "results_views.py"),
+  );
+  const renameFrom = async (
+    document: vscode.TextDocument,
+    offset: number,
+    newName: string,
+  ): Promise<vscode.WorkspaceEdit> =>
+    vscode.commands.executeCommand<vscode.WorkspaceEdit>(
+      "vscode.executeDocumentRenameProvider",
+      document.uri,
+      document.positionAt(offset),
+      newName,
+    );
+  const viewOffset = resultsViews.getText().indexOf("#result_card") + 2;
+  const crossFileRename = await renameFrom(resultsViews, viewOffset, "item_card");
+  const renamedFiles = new Set(crossFileRename.entries().map(([uri]) => uri.path.split("/").at(-1)));
+  assert.deepEqual([...renamedFiles].sort(), ["page.html", "results.html", "results_views.py"]);
+  assert.equal(crossFileRename.entries().flatMap(([, edits]) => edits).length, 5);
+
+  let pageDocument = await vscode.workspace.openTextDocument(vscode.Uri.joinPath(workspace.uri, "page.html"));
+  if (pageDocument.languageId !== "django-html") {
+    pageDocument = await vscode.languages.setTextDocumentLanguage(pageDocument, "django-html");
+  }
+  const fromInclude = await renameFrom(
+    pageDocument,
+    pageDocument.getText().indexOf("#result_card") + 2,
+    "item_card",
+  );
+  assert.equal(fromInclude.entries().flatMap(([, edits]) => edits).length, 5);
+
+  const references = await vscode.commands.executeCommand<vscode.Location[]>(
+    "vscode.executeReferenceProvider",
+    resultsViews.uri,
+    resultsViews.positionAt(viewOffset),
+  );
+  assert.equal(references.length, 5);
+
+  await assert.rejects(
+    renameFrom(includeDocument, includePartial + 1, "other_card"),
+    /more than one template/,
+    "a partial defined in several matching templates refuses to rename",
+  );
+
   const cardsUri = vscode.Uri.joinPath(workspace.uri, "apps/a/templates/shared/cards.html");
   const cardsDocument = await vscode.workspace.openTextDocument(cardsUri);
   const cardsEditor = await vscode.window.showTextDocument(cardsDocument);

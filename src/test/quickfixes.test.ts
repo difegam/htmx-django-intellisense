@@ -70,3 +70,33 @@ test("unknown Django partial offers a rename and a definition stub", () => {
   assert.equal(create.edits[0]!.start, text.length);
   assert.match(create.edits[0]!.newText, /\{% partialdef car %\}/);
 });
+
+test("duplicate partial offers to rename the later definition to an unused name", () => {
+  const text = `{% partialdef card %}{% endpartialdef %}{% partialdef card %}{% endpartialdef %}{% partialdef card_2 %}{% endpartialdef %}`;
+  const fixes = fixesFor(text, "django-html").filter((fix) => fix.title.startsWith("Rename duplicate"));
+  assert.equal(fixes.length, 1);
+  assert.equal(fixes[0]!.title, "Rename duplicate to 'card_3'");
+  assert.equal(text.slice(fixes[0]!.edits[0]!.start, fixes[0]!.edits[0]!.end), "card");
+  assert.equal(fixes[0]!.edits[0]!.newText, "card_3");
+});
+
+test("duplicate partial fixes rename the end tag and avoid repeated candidates", async () => {
+  const { scanDocument } = await import("../scanner.js");
+  const text = `{% partialdef card %}a{% endpartialdef card %}{% partialdef card %}b{% endpartialdef card %}{% partialdef card %}c{% endpartialdef %}`;
+  const scan = scanDocument(text);
+  const second = scan.partialDefinitions[1]!;
+  const third = scan.partialDefinitions[2]!;
+  const diagnostics = [second, third].map((definition) => ({
+    code: "duplicate-partial",
+    message: "dup",
+    start: definition.nameStart,
+    end: definition.nameEnd,
+  }));
+  const fixes = computeQuickFixes(text, diagnostics, {} as never, scan);
+  assert.deepEqual(
+    fixes.map((fix) => fix.title),
+    ["Rename duplicate to 'card_2'", "Rename duplicate to 'card_3'"],
+  );
+  assert.equal(fixes[0]?.edits.length, 2);
+  assert.equal(fixes[1]?.edits.length, 1);
+});

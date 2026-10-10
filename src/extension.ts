@@ -15,10 +15,22 @@ import {
   valuesForMode,
   versionsLabel,
 } from "./intellisense.js";
+import { buildExcludeGlob, DEFAULT_SOURCE_EXCLUDES, escapeGlobSegment } from "./globs.js";
+import {
+  collectPartialReferences,
+  createLineIndex,
+  matchesTemplate,
+  isResolvableTemplateName,
+  normalizeTemplateName,
+  planPartialUsages,
+  type PartialSourceFile,
+  type PartialTarget,
+  type PartialUsage,
+} from "./partialRename.js";
 import {
   attributeAtOffset,
   partialAtOffset,
-  partialSpansByName,
+  scanTemplatePartialReferences,
   tagAtOffset,
   templatePartialReferenceAtOffset,
   type AttributeToken,
@@ -33,6 +45,10 @@ const DIAGNOSTIC_SOURCE = "htmx-django-intellisense";
 const COMPLETION_DOCUMENTATION = new WeakMap<vscode.CompletionItem, () => vscode.MarkdownString>();
 // ponytail: cap to avoid 100k+ results on monorepos repeating index.html; raise if users report truncation.
 const TEMPLATE_FINDFILES_LIMIT = 2000;
+const SOURCE_READ_CONCURRENCY = 32;
+/** Larger files (data dumps, logs) are skipped: no template or view is this big. */
+const SOURCE_MAX_BYTES = 2 * 1024 * 1024;
+const SOURCE_EXTENSIONS = "html,htm,djhtml,jinja,j2,dj,txt,xml,py";
 const ATTRIBUTE_PRIORITIES = [
   "hx-get",
   "hx-post",
@@ -244,46 +260,58 @@ const templatePartialCache = new Map<string, ResolvedPartialDefinition[]>();
 
 function clearTemplatePartialCache(): void {
   templatePartialCache.clear();
+  templateFileCache.clear();
 }
 
-function escapeGlobSegment(value: string): string {
-  return value.replace(/[?*\[\]{}]/g, (character) => {
-    if (character === "[") {
-      return "[[]";
-    }
-    if (character === "]") {
-      return "[]]";
-    }
-    return `[${character}]`;
-  });
+const templateFileCache = new Map<string, vscode.Uri[]>();
+
+/** Workspace files whose path ends with the normalized template name. */
+async function findTemplateUris(
+  normalized: string,
+  exclude: string | undefined,
+  token: vscode.CancellationToken,
+): Promise<vscode.Uri[]> {
+  if (!isResolvableTemplateName(normalized)) {
+    return [];
+  }
+  const uris = await vscode.workspace.findFiles(
+    `**/${escapeGlobSegment(normalized)}`,
+    exclude,
+    TEMPLATE_FINDFILES_LIMIT,
+    token,
+  );
+  return uris.filter((uri) => matchesTemplate(uri.path, normalized));
+}
+
+async function resolveTemplateFiles(
+  templateName: string,
+  token: vscode.CancellationToken,
+): Promise<vscode.Uri[]> {
+  const normalized = normalizeTemplateName(templateName);
+  const cached = templateFileCache.get(normalized);
+  if (cached !== undefined) {
+    return cached;
+  }
+  const matches = (await findTemplateUris(normalized, undefined, token)).sort((left, right) =>
+    left.toString().localeCompare(right.toString()),
+  );
+  if (!token.isCancellationRequested) {
+    templateFileCache.set(normalized, matches);
+  }
+  return matches;
 }
 
 async function resolveTemplatePartials(
   templateName: string,
   token: vscode.CancellationToken,
 ): Promise<ResolvedPartialDefinition[]> {
-  const normalized = templateName.replace(/\\/g, "/").replace(/^(\.\/)+/, "");
-  const parts = normalized.split("/");
-  const basename = parts.at(-1);
-  if (basename === undefined || basename === "" || normalized.startsWith("/") || parts.includes("..")) {
-    return [];
-  }
+  const normalized = normalizeTemplateName(templateName);
   const cached = templatePartialCache.get(normalized);
   if (cached !== undefined) {
     return cached;
   }
-  const uris = await vscode.workspace.findFiles(
-    `**/${escapeGlobSegment(normalized)}`,
-    undefined,
-    TEMPLATE_FINDFILES_LIMIT,
-    token,
-  );
-  const suffix = `/${normalized}`;
-  const matches = uris
-    .filter((uri) => uri.path === normalized || uri.path.endsWith(suffix))
-    .sort((left, right) => left.toString().localeCompare(right.toString()));
   const resolved: ResolvedPartialDefinition[] = [];
-  for (const uri of matches) {
+  for (const uri of await resolveTemplateFiles(templateName, token)) {
     if (token.isCancellationRequested) {
       return [];
     }
@@ -363,7 +391,19 @@ async function provideDefinitions(
   if (document.languageId !== "django-html" && document.languageId !== "python") {
     return undefined;
   }
-  const reference = templatePartialReferenceAtOffset(text, document.languageId, offset);
+  const references = scanTemplatePartialReferences(text, document.languageId);
+  const templateReference = references.find(
+    (candidate) => offset >= candidate.templateNameStart && offset < candidate.templateNameEnd,
+  );
+  if (templateReference !== undefined) {
+    const files = await resolveTemplateFiles(templateReference.templateName, token);
+    return files.length === 0
+      ? undefined
+      : files.map((uri) => new vscode.Location(uri, new vscode.Position(0, 0)));
+  }
+  const reference = references.find(
+    (candidate) => offset >= candidate.nameStart && offset <= candidate.nameEnd,
+  );
   if (reference === undefined || reference.name === "") {
     return undefined;
   }
@@ -381,6 +421,41 @@ async function provideDefinitions(
         ),
     );
   return locations.length === 0 ? undefined : locations;
+}
+
+const TEMPLATE_LINK_NAMES = new WeakMap<vscode.DocumentLink, string>();
+
+function provideTemplateLinks(document: vscode.TextDocument): vscode.DocumentLink[] {
+  if (document.languageId !== "django-html" && document.languageId !== "python") {
+    return [];
+  }
+  return scanTemplatePartialReferences(document.getText(), document.languageId).map((reference) => {
+    const link = new vscode.DocumentLink(
+      new vscode.Range(
+        document.positionAt(reference.templateNameStart),
+        document.positionAt(reference.templateNameEnd),
+      ),
+    );
+    link.tooltip = "Open template";
+    TEMPLATE_LINK_NAMES.set(link, reference.templateName);
+    return link;
+  });
+}
+
+async function resolveTemplateLink(
+  link: vscode.DocumentLink,
+  token: vscode.CancellationToken,
+): Promise<vscode.DocumentLink | undefined> {
+  const templateName = TEMPLATE_LINK_NAMES.get(link);
+  if (templateName === undefined) {
+    return undefined;
+  }
+  const [first] = await resolveTemplateFiles(templateName, token);
+  if (first === undefined) {
+    return undefined;
+  }
+  link.target = first;
+  return link;
 }
 
 function valueCompletionItems(
@@ -685,69 +760,284 @@ function provideHover(
   return undefined;
 }
 
+interface PartialSelection {
+  name: string;
+  start: number;
+  end: number;
+  target: PartialTarget;
+}
+
+function partialSelectionAt(document: vscode.TextDocument, offset: number): PartialSelection | undefined {
+  if (document.languageId === "django-html") {
+    const own = partialAtOffset(getScan(document), offset);
+    if (own !== undefined) {
+      return {
+        name: own.name,
+        start: own.nameStart,
+        end: own.nameEnd,
+        target: { selfPath: document.uri.path },
+      };
+    }
+  }
+  if (document.languageId !== "django-html" && document.languageId !== "python") {
+    return undefined;
+  }
+  const reference = templatePartialReferenceAtOffset(document.getText(), document.languageId, offset);
+  if (reference === undefined || reference.name === "") {
+    return undefined;
+  }
+  return {
+    name: reference.name,
+    start: reference.nameStart,
+    end: reference.nameEnd,
+    target: { templateName: reference.templateName },
+  };
+}
+
 function partialNameRange(
   document: vscode.TextDocument,
   position: vscode.Position,
 ): vscode.Range | undefined {
-  if (document.languageId !== "django-html") {
-    return undefined;
-  }
-  const scan = getScan(document);
-  const target = partialAtOffset(scan, document.offsetAt(position));
-  if (target === undefined) {
-    return undefined;
-  }
-  return new vscode.Range(document.positionAt(target.nameStart), document.positionAt(target.nameEnd));
+  const selection = partialSelectionAt(document, document.offsetAt(position));
+  return selection === undefined
+    ? undefined
+    : new vscode.Range(document.positionAt(selection.start), document.positionAt(selection.end));
 }
 
-function provideReferences(
+const SOURCE_FILE_GLOB = `**/*.{${SOURCE_EXTENSIONS}}`;
+
+/** Memoised exclude glob; cleared on exclude-setting changes and `pyvenv.cfg` events. */
+let sourceExcludeCache: { glob: string | undefined } | undefined;
+
+async function sourceExcludeGlob(token: vscode.CancellationToken): Promise<string | undefined> {
+  if (sourceExcludeCache !== undefined) {
+    return sourceExcludeCache.glob;
+  }
+  const glob = await computeSourceExcludeGlob(token);
+  if (!token.isCancellationRequested) {
+    sourceExcludeCache = { glob };
+  }
+  return glob;
+}
+
+async function computeSourceExcludeGlob(token: vscode.CancellationToken): Promise<string | undefined> {
+  const patterns = new Set<string>(DEFAULT_SOURCE_EXCLUDES);
+  for (const section of ["files", "search"]) {
+    const excludes = vscode.workspace.getConfiguration(section).get<Record<string, unknown>>("exclude") ?? {};
+    for (const [pattern, enabled] of Object.entries(excludes)) {
+      if (enabled === true) {
+        patterns.add(pattern);
+      }
+    }
+  }
+  // Virtual environments with any name are marked by a pyvenv.cfg file.
+  const markers = await vscode.workspace.findFiles("**/pyvenv.cfg", buildExcludeGlob(patterns), 50, token);
+  const environments = markers.map((marker) => {
+    const directory = vscode.workspace.asRelativePath(vscode.Uri.joinPath(marker, ".."), false);
+    return `${directory.split("/").map(escapeGlobSegment).join("/")}/**`;
+  });
+  return buildExcludeGlob(patterns, environments);
+}
+
+/** Runs `work` over `items` with at most `limit` in flight. */
+async function forEachLimited<T>(
+  items: readonly T[],
+  limit: number,
+  work: (item: T) => Promise<void>,
+): Promise<void> {
+  let next = 0;
+  const worker = async (): Promise<void> => {
+    while (next < items.length) {
+      const item = items[next++] as T;
+      await work(item);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+}
+
+interface PartialSources {
+  files: PartialSourceFile[];
+  uris: Map<string, vscode.Uri>;
+  /** The file limit was hit, so only the current document was read. */
+  capped: boolean;
+  /** Files that could not be scanned, so the result may be incomplete. */
+  incomplete: number;
+}
+
+/**
+ * Reads every workspace template and Python file that mentions `name`, preferring unsaved
+ * editor contents. When the file limit is hit nothing else is read: `capped` is set and the
+ * result holds just the current document.
+ */
+async function collectPartialSources(
+  name: string,
+  document: vscode.TextDocument,
+  target: PartialTarget,
+  token: vscode.CancellationToken,
+): Promise<PartialSources> {
+  const current: PartialSourceFile = {
+    path: document.uri.path,
+    languageId: document.languageId === "python" ? "python" : "django-html",
+    text: document.getText(),
+  };
+  const uris = new Map<string, vscode.Uri>([[document.uri.path, document.uri]]);
+  const exclude = await sourceExcludeGlob(token);
+  // A template with another extension is still found by name when resolving a template target,
+  // with the same excludes so templates in virtual environments stay out.
+  const [found, named] = await Promise.all([
+    vscode.workspace.findFiles(SOURCE_FILE_GLOB, exclude, TEMPLATE_FINDFILES_LIMIT, token),
+    target.templateName === undefined
+      ? []
+      : findTemplateUris(normalizeTemplateName(target.templateName), exclude, token),
+  ]);
+  if (found.length >= TEMPLATE_FINDFILES_LIMIT) {
+    return { files: [current], uris, capped: true, incomplete: 0 };
+  }
+  // Open buffers replace the disk contents for files already discovered in the workspace.
+  const candidates = new Map<string, vscode.Uri>([...found, ...named].map((uri) => [uri.toString(), uri]));
+  const open = new Map(
+    vscode.workspace.textDocuments.map((candidate) => [candidate.uri.toString(), candidate]),
+  );
+  const files: PartialSourceFile[] = [];
+  let incomplete = 0;
+  const decoder = new TextDecoder();
+  await forEachLimited(
+    [...candidates.values()].filter((uri) => uri.path !== document.uri.path),
+    SOURCE_READ_CONCURRENCY,
+    async (uri) => {
+      if (token.isCancellationRequested) {
+        return;
+      }
+      try {
+        let text = open.get(uri.toString())?.getText();
+        if (text === undefined) {
+          if ((await vscode.workspace.fs.stat(uri)).size > SOURCE_MAX_BYTES) {
+            incomplete++;
+            return;
+          }
+          text = decoder.decode(await vscode.workspace.fs.readFile(uri));
+        }
+        if (text.includes(name)) {
+          uris.set(uri.path, uri);
+          files.push({
+            path: uri.path,
+            languageId: uri.path.endsWith(".py") ? "python" : "django-html",
+            text,
+          });
+        }
+      } catch (error) {
+        // A dangling symlink or a file deleted mid-scan holds no usable text.
+        if (!(error instanceof vscode.FileSystemError && error.code === "FileNotFound")) {
+          incomplete++;
+        }
+      }
+    },
+  );
+  files.push(current);
+  return { files, uris, capped: false, incomplete };
+}
+
+/** Why `sources` may miss some uses, or `undefined` when every workspace file was scanned. */
+function incompleteSourcesReason(
+  sources: PartialSources,
+  consequence: { capped: string; incomplete: string },
+): string | undefined {
+  if (sources.capped) {
+    return `The workspace has more than ${TEMPLATE_FINDFILES_LIMIT} template and Python files, so ${consequence.capped}.`;
+  }
+  if (sources.incomplete > 0) {
+    return `${sources.incomplete} workspace file(s) could not be scanned, so ${consequence.incomplete}.`;
+  }
+  return undefined;
+}
+
+/** Maps usage offsets to ranges using the text already read, so no document is opened. */
+function usageLocations(
+  spans: readonly PartialUsage[],
+  { uris, files }: PartialSources,
+): { uri: vscode.Uri; range: vscode.Range; kind: PartialUsage["kind"] }[] {
+  const texts = new Map(files.map((file) => [file.path, file.text]));
+  const indexes = new Map<string, ReturnType<typeof createLineIndex>>();
+  const result: { uri: vscode.Uri; range: vscode.Range; kind: PartialUsage["kind"] }[] = [];
+  for (const span of spans) {
+    const uri = uris.get(span.path);
+    const text = texts.get(span.path);
+    if (uri === undefined || text === undefined) {
+      continue;
+    }
+    let locate = indexes.get(span.path);
+    if (locate === undefined) {
+      locate = createLineIndex(text);
+      indexes.set(span.path, locate);
+    }
+    const start = locate(span.start);
+    const end = locate(span.end);
+    result.push({
+      uri,
+      range: new vscode.Range(start.line, start.character, end.line, end.character),
+      kind: span.kind,
+    });
+  }
+  return result;
+}
+
+async function provideReferences(
   document: vscode.TextDocument,
   position: vscode.Position,
   context: vscode.ReferenceContext,
-): vscode.Location[] | undefined {
-  if (document.languageId !== "django-html") {
+  token: vscode.CancellationToken,
+): Promise<vscode.Location[] | undefined> {
+  const selection = partialSelectionAt(document, document.offsetAt(position));
+  if (selection === undefined) {
     return undefined;
   }
-  const scan = getScan(document);
-  const target = partialAtOffset(scan, document.offsetAt(position));
-  if (target === undefined) {
-    return undefined;
+  const sources = await collectPartialSources(selection.name, document, selection.target, token);
+  const reason = incompleteSourcesReason(sources, {
+    capped: `references to '${selection.name}' are limited to this file`,
+    incomplete: `the references to '${selection.name}' may be incomplete`,
+  });
+  if (reason !== undefined) {
+    void vscode.window.showWarningMessage(reason);
   }
-  const spans = partialSpansByName(scan, target.name).filter(
-    (span) => context.includeDeclaration || span.kind !== "definition",
-  );
-  return spans.map(
-    (span) =>
-      new vscode.Location(
-        document.uri,
-        new vscode.Range(document.positionAt(span.start), document.positionAt(span.end)),
-      ),
-  );
+  const spans = collectPartialReferences(sources.files, selection.target, selection.name);
+  return usageLocations(spans, sources)
+    .filter((usage) => context.includeDeclaration || usage.kind !== "definition")
+    .map((usage) => new vscode.Location(usage.uri, usage.range));
 }
 
-function provideRenameEdits(
+async function provideRenameEdits(
   document: vscode.TextDocument,
   position: vscode.Position,
   newName: string,
-): vscode.WorkspaceEdit | undefined {
-  if (document.languageId !== "django-html") {
+  token: vscode.CancellationToken,
+): Promise<vscode.WorkspaceEdit | undefined> {
+  // Ordinary Python identifiers belong to other providers, so check the position first.
+  const selection = partialSelectionAt(document, document.offsetAt(position));
+  if (selection === undefined) {
     return undefined;
   }
   if (!/^[\w-]+$/.test(newName)) {
     throw new Error("A Django partial name may only contain letters, numbers, underscores, and hyphens.");
   }
-  const scan = getScan(document);
-  const target = partialAtOffset(scan, document.offsetAt(position));
-  if (target === undefined) {
-    return undefined;
+  if (selection.name === newName) {
+    return new vscode.WorkspaceEdit();
+  }
+  const sources = await collectPartialSources(selection.name, document, selection.target, token);
+  // Includes and Python strings elsewhere may use the partial in files that were not read.
+  const reason = incompleteSourcesReason(sources, {
+    capped: "rename cannot find every use safely",
+    incomplete: "rename cannot find every use safely",
+  });
+  if (reason !== undefined) {
+    throw new Error(reason);
+  }
+  const plan = planPartialUsages(sources.files, selection.target, selection.name, newName);
+  if (plan.kind === "error") {
+    throw new Error(plan.message);
   }
   const edit = new vscode.WorkspaceEdit();
-  for (const span of partialSpansByName(scan, target.name)) {
-    edit.replace(
-      document.uri,
-      new vscode.Range(document.positionAt(span.start), document.positionAt(span.end)),
-      newName,
-    );
+  for (const usage of usageLocations(plan.spans, sources)) {
+    edit.replace(usage.uri, usage.range, newName);
   }
   return edit;
 }
@@ -803,10 +1093,19 @@ export function activate(context: vscode.ExtensionContext): void {
   }
   const diagnostics = vscode.languages.createDiagnosticCollection(DIAGNOSTIC_SOURCE);
   const timers = new Map<string, NodeJS.Timeout>();
-  const partialWatcher = vscode.workspace.createFileSystemWatcher("**/*.{html,py}");
+  const partialWatcher = vscode.workspace.createFileSystemWatcher(SOURCE_FILE_GLOB);
   partialWatcher.onDidChange(clearTemplatePartialCache);
   partialWatcher.onDidCreate(clearTemplatePartialCache);
   partialWatcher.onDidDelete(clearTemplatePartialCache);
+  // Virtual-environment markers are the only files that affect the exclude glob.
+  const venvWatcher = vscode.workspace.createFileSystemWatcher("**/pyvenv.cfg");
+  const onVenvChange = (): void => {
+    clearTemplatePartialCache();
+    sourceExcludeCache = undefined;
+  };
+  venvWatcher.onDidChange(onVenvChange);
+  venvWatcher.onDidCreate(onVenvChange);
+  venvWatcher.onDidDelete(onVenvChange);
 
   const updateDiagnostics = (document: vscode.TextDocument): void => {
     if (
@@ -872,6 +1171,7 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
     diagnostics,
     partialWatcher,
+    venvWatcher,
     vscode.languages.registerCompletionItemProvider(
       DOCUMENT_SELECTOR,
       {
@@ -905,6 +1205,10 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.languages.registerDefinitionProvider(PARTIAL_SELECTOR, {
       provideDefinition: (document, position, token) => provideDefinitions(document, position, token),
     }),
+    vscode.languages.registerDocumentLinkProvider(PARTIAL_SELECTOR, {
+      provideDocumentLinks: (document) => provideTemplateLinks(document),
+      resolveDocumentLink: (link, token) => resolveTemplateLink(link, token),
+    }),
     vscode.languages.registerHoverProvider(DOCUMENT_SELECTOR, {
       provideHover: (document, position) => provideHover(catalog, document, position),
     }),
@@ -915,23 +1219,25 @@ export function activate(context: vscode.ExtensionContext): void {
       },
       { providedCodeActionKinds: [vscode.CodeActionKind.QuickFix] },
     ),
-    vscode.languages.registerReferenceProvider(
-      { language: "django-html" },
-      { provideReferences: (document, position, context) => provideReferences(document, position, context) },
-    ),
-    vscode.languages.registerRenameProvider(
-      { language: "django-html" },
-      {
-        provideRenameEdits: (document, position, newName) => provideRenameEdits(document, position, newName),
-        prepareRename: (document, position) => {
-          const range = partialNameRange(document, position);
-          if (range === undefined) {
-            throw new Error("Only Django partial names can be renamed here.");
+    vscode.languages.registerReferenceProvider(PARTIAL_SELECTOR, {
+      provideReferences: (document, position, context, token) =>
+        provideReferences(document, position, context, token),
+    }),
+    vscode.languages.registerRenameProvider(PARTIAL_SELECTOR, {
+      provideRenameEdits: (document, position, newName, token) =>
+        provideRenameEdits(document, position, newName, token),
+      prepareRename: (document, position) => {
+        const range = partialNameRange(document, position);
+        if (range === undefined) {
+          // Leave ordinary Python identifiers to the other rename providers.
+          if (document.languageId === "python") {
+            return undefined;
           }
-          return range;
-        },
+          throw new Error("Only Django partial names can be renamed here.");
+        }
+        return range;
       },
-    ),
+    }),
     vscode.commands.registerCommand(COPY_EXAMPLE_COMMAND, copyExample),
     vscode.commands.registerCommand(OPEN_SETTINGS_COMMAND, () =>
       vscode.commands.executeCommand(
@@ -952,6 +1258,9 @@ export function activate(context: vscode.ExtensionContext): void {
       diagnostics.delete(document.uri);
     }),
     vscode.workspace.onDidChangeConfiguration((event) => {
+      if (event.affectsConfiguration("files.exclude") || event.affectsConfiguration("search.exclude")) {
+        sourceExcludeCache = undefined;
+      }
       if (event.affectsConfiguration("htmxDjango")) {
         for (const document of vscode.workspace.textDocuments) {
           updateDiagnostics(document);

@@ -141,3 +141,67 @@ render(request, "formatted.html#partial".format())
 render(request, "unterminated.html#partial)`;
   assert.deepEqual(scanTemplatePartialReferences(text, "python"), []);
 });
+
+test("template partial references expose the template-name span", () => {
+  const html = `{% include "cards/item.html#result-card" %}`;
+  const [htmlRef] = scanTemplatePartialReferences(html, "django-html");
+  assert.equal(html.slice(htmlRef!.templateNameStart, htmlRef!.templateNameEnd), "cards/item.html");
+
+  const py = `render(request, 'authors.html#card')\nget_template(r"a/b.html#row")`;
+  assert.deepEqual(
+    scanTemplatePartialReferences(py, "python").map((ref) =>
+      py.slice(ref.templateNameStart, ref.templateNameEnd),
+    ),
+    ["authors.html", "a/b.html"],
+  );
+});
+
+test("scanner finds class-based view template_name partials", () => {
+  const text = `
+class ResultsView(TemplateView):
+    template_name = "results.html#result_card"
+    other = "ignored.html#nope"
+
+urlpatterns = [
+    path("a/", TemplateView.as_view(template_name="results.html#row")),
+    path("b/", TemplateView.as_view(template_name=f"{x}.html#dyn")),
+]
+class Dynamic(TemplateView):
+    template_name = "base.html#a" if flag else "other.html#b"
+    template_name = "x.html#c" + suffix
+`;
+  assert.deepEqual(
+    scanTemplatePartialReferences(text, "python").map(({ templateName, name }) => [templateName, name]),
+    [
+      ["results.html", "result_card"],
+      ["results.html", "row"],
+    ],
+  );
+});
+
+test("template_name partial is found before a decorator and with an annotation", async () => {
+  const { scanTemplatePartialReferences } = await import("../scanner.js");
+  const decorated = `class V(TemplateView):\n    template_name = "a.html#card"\n\n    @method_decorator(x)\n    def dispatch(self): pass\n`;
+  assert.equal(scanTemplatePartialReferences(decorated, "python")[0]?.name, "card");
+  const annotated = `class V(TemplateView):\n    template_name: str = "a.html#card"\n    x = 1\n`;
+  assert.equal(scanTemplatePartialReferences(annotated, "python")[0]?.name, "card");
+});
+
+test("partialAtOffset matches the name in the end tag", async () => {
+  const { partialAtOffset, scanDocument } = await import("../scanner.js");
+  const text = "{% partialdef card %}x{% endpartialdef card %}";
+  const scan = scanDocument(text);
+  assert.equal(partialAtOffset(scan, text.lastIndexOf("card") + 1)?.name, "card");
+});
+
+test("template_name partial is found when the next statement starts on a new line", async () => {
+  const { scanTemplatePartialReferences } = await import("../scanner.js");
+  for (const next of ["if DEBUG:\n    pass", '"""doc"""', "for a in b:\n    pass", "not_used = 1"]) {
+    const text = `template_name = "c.html#row"\n${next}\n`;
+    assert.equal(scanTemplatePartialReferences(text, "python")[0]?.name, "row", next);
+  }
+  const ternary = `template_name = "c.html#row" if flag else "d.html#x"\n`;
+  assert.equal(scanTemplatePartialReferences(ternary, "python").length, 0);
+  const concatenated = `template_name = "c.html#row" "tail"\n`;
+  assert.equal(scanTemplatePartialReferences(concatenated, "python").length, 0);
+});

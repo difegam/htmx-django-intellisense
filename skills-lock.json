@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "skills": {
+    "typescript-advanced-types": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "skillPath": "plugins/javascript-typescript/skills/typescript-advanced-types/SKILL.md",
+      "computedHash": "8cbf2bf600f392d7260e476e3202932a876e2281cda3b15a8b6a5a43f383252d"
+    },
+    "vscode-extension-expert": {
+      "source": "s-hiraoku/vscode-sidebar-terminal",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/vscode-extension-expert/SKILL.md",
+      "computedHash": "75c47e6af1766e54520759124efb1a66cfae9f739a2a8039b4c253b1bdfe0391"
+    }
+  }
+}
