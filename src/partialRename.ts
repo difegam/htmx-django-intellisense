@@ -67,6 +67,10 @@ export function planPartialUsages(
   newName?: string,
 ): PartialUsagePlan {
   const scanOf = createScanCache();
+  const ambiguous: PartialUsagePlan = {
+    kind: "error",
+    message: `Partial '${name}' is defined in more than one template. Rename is ambiguous.`,
+  };
   const templates = files.filter((file) => file.languageId === "django-html");
   const definitionsOf = (file: PartialSourceFile, partial: string) =>
     scanOf(file).partialDefinitions.filter((definition) => definition.name === partial);
@@ -90,10 +94,7 @@ export function planPartialUsages(
   } else {
     const defining = definingPaths(target.templateName);
     if (defining.length > 1) {
-      return {
-        kind: "error",
-        message: `Partial '${name}' is defined in more than one template. Rename is ambiguous.`,
-      };
+      return ambiguous;
     }
     if (defining[0] === undefined) {
       return { kind: "error", message: `No definition of partial '${name}' was found.` };
@@ -132,10 +133,7 @@ export function planPartialUsages(
         continue;
       }
       if (definingPaths(reference.templateName).length > 1) {
-        return {
-          kind: "error",
-          message: `Partial '${name}' is defined in more than one template. Rename is ambiguous.`,
-        };
+        return ambiguous;
       }
       spans.push({ path: file.path, start: reference.nameStart, end: reference.nameEnd, kind: "reference" });
     }
@@ -187,8 +185,7 @@ export function collectPartialReferences(
           ? definingPaths.some((path) => matchesTemplate(path, reference.templateName))
           : target.selfPath !== undefined
             ? matchesTemplate(target.selfPath, reference.templateName)
-            : target.templateName !== undefined &&
-              normalizeTemplateName(reference.templateName) === normalizeTemplateName(target.templateName);
+            : normalizeTemplateName(reference.templateName) === normalizeTemplateName(target.templateName);
       if (matches) {
         spans.push({
           path: file.path,
