@@ -12,6 +12,10 @@ The project follows [Keep a Changelog](https://keepachangelog.com/) conventions 
 - `template_name = "…#…"` class attributes and `as_view(template_name="…#…")` are recognised as partial references.
 - Quick fix "Rename duplicate to 'name_2'" for the `duplicate-partial` warning.
 
+### Changed
+
+- Template cache invalidation is now scoped to the affected cache: content edits clear only the resolved-partial cache, file create/delete events clear the template list cache, and Find References and Rename skip the by-name template search when the source file already covers the definition.
+
 ## [0.2.0] - 2026-10-09
 
 ### Added

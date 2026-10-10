@@ -96,6 +96,10 @@ Open the `examples/` workspace (or any HTML/Django template project) and run thr
 1. Press `Ctrl/Cmd+.` on the diagnostic. Confirm quick fixes such as "Replace with 'hx-method'" and "Replace with 'data-hx-method'" are offered.
 1. Open a `django-html` file with `{% partialdef card inline %}` and `{% partial card %}`. Confirm completion and go-to-definition work for local partials.
 1. Try the partial rename with `F2`. Confirm both the definition and the call update.
+1. Create a second template with `{% include "first.html#card" %}`. Run **Find All References** (`Shift+F12`) on the `card` partial name. Confirm the list includes the `partialdef`, the local `{% partial %}` call, and the `include` reference in the second file.
+1. Press `F2` on the partial name in either file. Confirm **Rename Symbol** rewrites the `partialdef`, the local `{% partial %}`, and the cross-file `include` together in the Refactor Preview.
+1. `Ctrl/Cmd+click` the template path in `{% include "first.html#card" %}` or `render(request, "first.html#card")`. Confirm the template file opens.
+1. Introduce a duplicate `{% partialdef card %}` in the same file. Confirm the **Rename duplicate to 'card_2'** quick fix appears and renames the later definition.
 
 ## Inspect extension output
 

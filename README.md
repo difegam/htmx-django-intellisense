@@ -146,9 +146,9 @@ Definitions in the current template are offered after `{% partial `:
 {% partial result_card %}
 ```
 
-Go to Definition, Peek Definition, Find All References, and Rename Symbol work
-with local partials. Static cross-template references also complete and
-navigate from Django includes and common Python APIs:
+Find All References (`Shift+F12`) and Rename Symbol (`F2`) work across the workspace: the `partialdef`, every `{% partial %}` tag, `{% include %}` references, and Python view strings are listed and rewritten together. `Ctrl/Cmd+click` on the template path in any of those references opens the template file. Duplicate `{% partialdef %}` definitions are flagged with a quick fix to rename the later one.
+
+Static cross-template references also complete and navigate from Django includes and common Python APIs:
 
 ```django
 {% include "results.html#result_card" %}
