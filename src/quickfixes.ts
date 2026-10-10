@@ -1,5 +1,5 @@
 import type { CatalogIndex } from "./catalog.js";
-import type { ScanResult } from "./scanner.js";
+import { definitionNameSpans, type ScanResult } from "./scanner.js";
 
 export interface DiagnosticLike {
   code: string;
@@ -146,11 +146,9 @@ function duplicatePartialFixes(
   const candidate = `${name}_${suffix}`;
   // Later duplicates of the same name must not be offered the same replacement.
   taken.add(candidate);
-  const edits: QuickFix["edits"] = [{ start: diagnostic.start, end: diagnostic.end, newText: candidate }];
   const definition = scan.partialDefinitions.find((entry) => entry.nameStart === diagnostic.start);
-  if (definition?.endName !== undefined) {
-    edits.push({ start: definition.endName.start, end: definition.endName.end, newText: candidate });
-  }
+  const spans = definition === undefined ? [diagnostic] : definitionNameSpans(definition);
+  const edits = spans.map(({ start, end }) => ({ start, end, newText: candidate }));
   return [{ title: `Rename duplicate to '${candidate}'`, diagnosticIndex: index, edits }];
 }
 

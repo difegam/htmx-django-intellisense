@@ -104,7 +104,8 @@ export function planPartialUsages(
   const targetFile = templates.find((file) => file.path === targetPath);
   // A self target may legitimately lack a definition yet (typo, work in progress); its
   // local uses are still renamed. Only a template with no use at all has nothing to rename.
-  const local = targetFile === undefined ? [] : partialSpansByName(scanOf(targetFile), name);
+  const local =
+    targetFile === undefined ? [] : partialSpansByName(scanOf(targetFile), name, { includeEndNames: true });
   if (targetFile === undefined || local.length === 0) {
     return { kind: "error", message: `No definition of partial '${name}' was found.` };
   }
@@ -120,10 +121,6 @@ export function planPartialUsages(
   }
 
   const spans: PartialUsage[] = local.map((span) => toUsage(targetPath, span));
-  const endName = definitions[0]?.endName;
-  if (endName !== undefined) {
-    spans.push(toUsage(targetPath, { ...endName, kind: "definition" }));
-  }
   // Without a definition, references to a matching template path may resolve to a
   // different template, so an orphan rename must stay within the selected file.
   if (definitions.length === 0) {

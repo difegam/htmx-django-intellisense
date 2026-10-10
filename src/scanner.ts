@@ -682,22 +682,33 @@ export interface PartialNameSpan extends Span {
   kind: "definition" | "reference";
 }
 
+/** A definition's `partialdef` name span plus its paired `endpartialdef` name, if any. */
+export function definitionNameSpans(definition: PartialDefinition): Span[] {
+  const spans: Span[] = [{ start: definition.nameStart, end: definition.nameEnd }];
+  if (definition.endName !== undefined) {
+    spans.push(definition.endName);
+  }
+  return spans;
+}
+
 /**
  * All same-file definition and reference name spans that share a partial name. Names on
- * `endpartialdef` tags are not included; they are available as `PartialDefinition.endName`.
+ * `endpartialdef` tags are included only with `includeEndNames`, which renames need.
  */
 export function partialSpansByName(
   scan: Pick<ScanResult, "partialDefinitions" | "partialReferences">,
   name: string,
+  { includeEndNames = false }: { includeEndNames?: boolean } = {},
 ): PartialNameSpan[] {
   return [
     ...scan.partialDefinitions
       .filter((definition) => definition.name === name)
-      .map((definition): PartialNameSpan => ({
-        start: definition.nameStart,
-        end: definition.nameEnd,
-        kind: "definition",
-      })),
+      .flatMap((definition) =>
+        includeEndNames
+          ? definitionNameSpans(definition)
+          : [{ start: definition.nameStart, end: definition.nameEnd }],
+      )
+      .map((span): PartialNameSpan => ({ ...span, kind: "definition" })),
     ...scan.partialReferences
       .filter((reference) => reference.name === name)
       .map((reference): PartialNameSpan => ({
