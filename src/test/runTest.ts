@@ -53,6 +53,23 @@ async function main(): Promise<void> {
       "",
     ].join("\n"),
   );
+  const templateC = path.join(workspacePath, "apps/c/templates");
+  mkdirSync(templateC, { recursive: true });
+  writeFileSync(
+    path.join(templateC, "results.html"),
+    "{% partialdef result_card inline %}<li></li>{% endpartialdef %}\n{% partial result_card %}\n",
+  );
+  writeFileSync(path.join(workspacePath, "page.html"), '{% include "results.html#result_card" %}\n');
+  writeFileSync(
+    path.join(workspacePath, "results_views.py"),
+    [
+      "class ResultsView(TemplateView):",
+      '    template_name = "results.html#result_card"',
+      "",
+      'def card(request):\n    return render(request, "results.html#result_card")',
+      "",
+    ].join("\n"),
+  );
   try {
     await runTests({
       extensionDevelopmentPath,

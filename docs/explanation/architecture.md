@@ -35,11 +35,11 @@ The scanner skips HTML comments, Django comments, `{% comment %}` and `{% verbat
 
 `src/scanCache.ts` memoizes each document's scan by its version, so the completion, hover, diagnostics, code-action, reference, and rename providers reuse one parse per revision instead of re-scanning on every request. Cross-template partial lookups are cached by template name and invalidated by a file-system watcher, so completion and navigation inside an `include`/`render` string do not re-glob the workspace on every keystroke.
 
-`src/extension.ts` registers HTMX providers for `html` and `django-html`, plus partial completion and definition providers for `django-html` and Python. It also registers quick-fix code actions for its own diagnostics (`src/quickfixes.ts`) and reference and rename providers for same-file Django partials. Cross-template requests find matching workspace files and scan them on demand. Diagnostics remain limited to HTML and Django HTML; they are debounced after document changes, cleared when a document closes, and recomputed when `htmxDjango` settings change. If the committed catalog cannot be loaded, activation reports the error and no providers are registered.
+`src/extension.ts` registers HTMX providers for `html` and `django-html`, plus partial completion, definition, document-link, reference, and rename providers for `django-html` and Python. It also registers quick-fix code actions for its own diagnostics (`src/quickfixes.ts`). `src/partialRename.ts` is a `vscode`-free planner that collects every use of a partial across the files the providers read and decides when a rename must be refused (duplicates, ambiguous templates, collisions). Cross-template requests find matching workspace files and scan them on demand. Diagnostics remain limited to HTML and Django HTML; they are debounced after document changes, cleared when a document closes, and recomputed when `htmxDjango` settings change. If the committed catalog cannot be loaded, activation reports the error and no providers are registered.
 
 ## Design boundaries
 
 - The extension has no runtime dependencies and makes no runtime HTTP requests.
 - The catalog stores canonical attributes only; aliases are synthesized during lookup and completion.
-- Partial definitions are not indexed across a workspace, and template lookup does not model Django settings or loader order.
+- Partial definitions are not indexed across a workspace (references and rename scan matching files on demand, up to a file limit), and template lookup does not model Django settings or loader order.
 - Diagnostics intentionally warn only for clear HTMX typos, closed-set literal errors, duplicate local definitions, and unknown local references.
