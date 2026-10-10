@@ -259,7 +259,7 @@ interface ResolvedPartialDefinition {
  */
 const templatePartialCache = new Map<string, ResolvedPartialDefinition[]>();
 
-function clearTemplatePartialCache(): void {
+function clearTemplateCaches(): void {
   templatePartialCache.clear();
   templateFileCache.clear();
 }
@@ -806,6 +806,7 @@ function partialNameRange(
 }
 
 const SOURCE_FILE_GLOB = `**/*.{${SOURCE_EXTENSIONS}}`;
+const SOURCE_EXTENSION_SET = new Set(SOURCE_EXTENSIONS.split(","));
 
 /** Memoised exclude glob; cleared on exclude-setting changes and `pyvenv.cfg` events. */
 let sourceExcludeCache: { glob: string | undefined } | undefined;
@@ -887,12 +888,16 @@ async function collectPartialSources(
   };
   const exclude = await sourceExcludeGlob(token);
   // A template with another extension is still found by name when resolving a template target,
-  // with the same excludes so templates in virtual environments stay out.
+  // with the same excludes so templates in virtual environments stay out. Names with a scanned
+  // extension are already covered by the source glob.
+  const templateName =
+    target.templateName === undefined ? undefined : normalizeTemplateName(target.templateName);
+  const extension = templateName === undefined ? undefined : /\.([^./]+)$/.exec(templateName)?.[1];
   const [found, named] = await Promise.all([
     vscode.workspace.findFiles(SOURCE_FILE_GLOB, exclude, TEMPLATE_FINDFILES_LIMIT, token),
-    target.templateName === undefined
+    templateName === undefined || (extension !== undefined && SOURCE_EXTENSION_SET.has(extension))
       ? []
-      : findTemplateUris(normalizeTemplateName(target.templateName), exclude, token),
+      : findTemplateUris(templateName, exclude, token),
   ]);
   if (found.length >= TEMPLATE_FINDFILES_LIMIT) {
     return { files: [current], capped: true, incomplete: 0 };
@@ -1100,13 +1105,13 @@ export function activate(context: vscode.ExtensionContext): void {
   const diagnostics = vscode.languages.createDiagnosticCollection(DIAGNOSTIC_SOURCE);
   const timers = new Map<string, NodeJS.Timeout>();
   const partialWatcher = vscode.workspace.createFileSystemWatcher(SOURCE_FILE_GLOB);
-  partialWatcher.onDidChange(clearTemplatePartialCache);
-  partialWatcher.onDidCreate(clearTemplatePartialCache);
-  partialWatcher.onDidDelete(clearTemplatePartialCache);
+  // Content edits only change partial definitions; the template file lists change on create/delete.
+  partialWatcher.onDidChange(() => templatePartialCache.clear());
+  partialWatcher.onDidCreate(clearTemplateCaches);
+  partialWatcher.onDidDelete(clearTemplateCaches);
   // Virtual-environment markers are the only files that affect the exclude glob.
   const venvWatcher = vscode.workspace.createFileSystemWatcher("**/pyvenv.cfg");
   const onVenvChange = (): void => {
-    clearTemplatePartialCache();
     sourceExcludeCache = undefined;
   };
   venvWatcher.onDidChange(onVenvChange);
