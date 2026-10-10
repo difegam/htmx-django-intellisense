@@ -158,7 +158,8 @@ test("a template without a definition still renames and lists its local partial 
   };
   const files = [orphan, caller];
   const plan = planPartialUsages(files, { selfPath: orphan.path }, "card", "tile");
-  assert.deepEqual(slices(plan, files), ["reference:card", "reference:card", "reference:card"]);
+  // Without a definition the rename stays in the selected file; references still list the caller.
+  assert.deepEqual(slices(plan, files), ["reference:card", "reference:card"]);
   assert.equal(collectPartialReferences(files, { selfPath: orphan.path }, "card").length, 3);
   const nothing = planPartialUsages(
     [{ ...orphan, text: "plain" }],

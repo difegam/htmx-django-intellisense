@@ -148,8 +148,8 @@ function duplicatePartialFixes(
   taken.add(candidate);
   const edits: QuickFix["edits"] = [{ start: diagnostic.start, end: diagnostic.end, newText: candidate }];
   const definition = scan.partialDefinitions.find((entry) => entry.nameStart === diagnostic.start);
-  if (definition?.endNameStart !== undefined && definition.endNameEnd !== undefined) {
-    edits.push({ start: definition.endNameStart, end: definition.endNameEnd, newText: candidate });
+  if (definition?.endName !== undefined) {
+    edits.push({ start: definition.endName.start, end: definition.endName.end, newText: candidate });
   }
   return [{ title: `Rename duplicate to '${candidate}'`, diagnosticIndex: index, edits }];
 }

@@ -1,9 +1,8 @@
 import {
   partialSpansByName,
-  scanDocument,
+  scanPartials,
   scanTemplatePartialReferences,
   type PartialNameSpan,
-  type ScanResult,
 } from "./scanner.js";
 
 export interface PartialSourceFile {
@@ -22,11 +21,16 @@ export interface PartialUsage {
 export type PartialTarget =
   { selfPath: string; templateName?: undefined } | { templateName: string; selfPath?: undefined };
 
-export type PartialUsagePlan =
-  { kind: "ok"; targetPath: string; spans: PartialUsage[] } | { kind: "error"; message: string };
+export type PartialUsagePlan = { kind: "ok"; spans: PartialUsage[] } | { kind: "error"; message: string };
 
 export function normalizeTemplateName(templateName: string): string {
   return templateName.replace(/\\/g, "/").replace(/^(\.\/)+/, "");
+}
+
+/** Rejects absolute paths, `..` segments, and names without a file part. */
+export function isResolvableTemplateName(normalized: string): boolean {
+  const parts = normalized.split("/");
+  return parts.at(-1) !== "" && !normalized.startsWith("/") && !parts.includes("..");
 }
 
 export function matchesTemplate(path: string, templateName: string): boolean {
@@ -34,12 +38,14 @@ export function matchesTemplate(path: string, templateName: string): boolean {
   return path === normalized || path.endsWith(`/${normalized}`);
 }
 
-function createScanCache(): (file: PartialSourceFile) => ScanResult {
-  const scans = new Map<string, ScanResult>();
+type PartialScan = ReturnType<typeof scanPartials>;
+
+function createScanCache(): (file: PartialSourceFile) => PartialScan {
+  const scans = new Map<string, PartialScan>();
   return (file) => {
     let scan = scans.get(file.path);
     if (scan === undefined) {
-      scan = scanDocument(file.text);
+      scan = scanPartials(file.text);
       scans.set(file.path, scan);
     }
     return scan;
@@ -62,13 +68,21 @@ export function planPartialUsages(
 ): PartialUsagePlan {
   const scanOf = createScanCache();
   const templates = files.filter((file) => file.languageId === "django-html");
-  const defines = (file: PartialSourceFile, partial: string): number =>
-    scanOf(file).partialDefinitions.filter((definition) => definition.name === partial).length;
+  const definitionsOf = (file: PartialSourceFile, partial: string) =>
+    scanOf(file).partialDefinitions.filter((definition) => definition.name === partial);
 
-  const definingPaths = (templateName: string): string[] =>
-    templates
-      .filter((file) => matchesTemplate(file.path, templateName) && defines(file, name) > 0)
-      .map((file) => file.path);
+  const definingPathsByTemplate = new Map<string, string[]>();
+  const definingPaths = (templateName: string): string[] => {
+    const normalized = normalizeTemplateName(templateName);
+    let paths = definingPathsByTemplate.get(normalized);
+    if (paths === undefined) {
+      paths = templates
+        .filter((file) => matchesTemplate(file.path, normalized) && definitionsOf(file, name).length > 0)
+        .map((file) => file.path);
+      definingPathsByTemplate.set(normalized, paths);
+    }
+    return paths;
+  };
 
   let targetPath: string;
   if (target.selfPath !== undefined) {
@@ -90,27 +104,31 @@ export function planPartialUsages(
   const targetFile = templates.find((file) => file.path === targetPath);
   // A self target may legitimately lack a definition yet (typo, work in progress); its
   // local uses are still renamed. Only a template with no use at all has nothing to rename.
-  const orphan =
-    target.selfPath !== undefined &&
-    targetFile !== undefined &&
-    defines(targetFile, name) === 0 &&
-    partialSpansByName(scanOf(targetFile), name).length > 0;
-  if (targetFile === undefined || (defines(targetFile, name) === 0 && !orphan)) {
+  const local = targetFile === undefined ? [] : partialSpansByName(scanOf(targetFile), name);
+  if (targetFile === undefined || local.length === 0) {
     return { kind: "error", message: `No definition of partial '${name}' was found.` };
   }
-  if (defines(targetFile, name) > 1) {
+  const definitions = definitionsOf(targetFile, name);
+  if (definitions.length > 1) {
     return {
       kind: "error",
       message: `Partial '${name}' is defined more than once in this template. Fix the duplicate first.`,
     };
   }
-  if (newName !== undefined && defines(targetFile, newName) > 0) {
+  if (newName !== undefined && definitionsOf(targetFile, newName).length > 0) {
     return { kind: "error", message: `Partial '${newName}' is already defined in this template.` };
   }
 
-  const spans: PartialUsage[] = partialSpansByName(scanOf(targetFile), name).map((span) =>
-    toUsage(targetPath, span),
-  );
+  const spans: PartialUsage[] = local.map((span) => toUsage(targetPath, span));
+  const endName = definitions[0]?.endName;
+  if (endName !== undefined) {
+    spans.push(toUsage(targetPath, { ...endName, kind: "definition" }));
+  }
+  // Without a definition, references to a matching template path may resolve to a
+  // different template, so an orphan rename must stay within the selected file.
+  if (definitions.length === 0) {
+    return { kind: "ok", spans };
+  }
   for (const file of files) {
     for (const reference of scanTemplatePartialReferences(file.text, file.languageId)) {
       if (reference.name !== name || !matchesTemplate(targetPath, reference.templateName)) {
@@ -125,7 +143,7 @@ export function planPartialUsages(
       spans.push({ path: file.path, start: reference.nameStart, end: reference.nameEnd, kind: "reference" });
     }
   }
-  return { kind: "ok", targetPath, spans };
+  return { kind: "ok", spans };
 }
 
 /**
@@ -151,9 +169,7 @@ export function collectPartialReferences(
     if (!isTarget) {
       continue;
     }
-    const own = partialSpansByName(scanOf(file), name).filter(
-      (span) => span.kind === "definition" && span.isEndTag !== true,
-    );
+    const own = partialSpansByName(scanOf(file), name).filter((span) => span.kind === "definition");
     if (own.length > 0) {
       definingPaths.push(file.path);
       spans.push(...own.map((span) => toUsage(file.path, span)));

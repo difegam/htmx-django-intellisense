@@ -31,8 +31,7 @@ export interface PartialDefinition {
   tagEnd: number;
   inline: boolean;
   /** Span of the optional name in the closing `{% endpartialdef name %}`. */
-  endNameStart?: number;
-  endNameEnd?: number;
+  endName?: Span;
 }
 
 export interface PartialReference {
@@ -239,7 +238,7 @@ function maskIgnoredDjangoRegions(text: string): string {
   return chars.join("");
 }
 
-function scanPartials(text: string): Pick<ScanResult, "partialDefinitions" | "partialReferences"> {
+export function scanPartials(text: string): Pick<ScanResult, "partialDefinitions" | "partialReferences"> {
   const visible = maskIgnoredDjangoRegions(text);
   const partialDefinitions: PartialDefinition[] = [];
   const partialReferences: PartialReference[] = [];
@@ -254,20 +253,20 @@ function scanPartials(text: string): Pick<ScanResult, "partialDefinitions" | "pa
     }
     const args = rawArgs.trim().split(/\s+/).filter(Boolean);
     const name = args[0];
-    if (command === "endpartialdef") {
-      const closing = open.pop();
-      if (closing !== undefined && name !== undefined && name === closing.name) {
-        const endNameStart = match.index + full.indexOf(name, full.indexOf(command) + command.length);
-        closing.endNameStart = endNameStart;
-        closing.endNameEnd = endNameStart + name.length;
+    if (name === undefined) {
+      if (command === "endpartialdef") {
+        open.pop();
       }
       continue;
     }
-    if (name === undefined) {
+    const nameStart = match.index + full.indexOf(name, full.indexOf(command) + command.length);
+    if (command === "endpartialdef") {
+      const closing = open.pop();
+      if (closing?.name === name) {
+        closing.endName = { start: nameStart, end: nameStart + name.length };
+      }
       continue;
     }
-    const relativeNameStart = full.indexOf(name, full.indexOf(command) + command.length);
-    const nameStart = match.index + relativeNameStart;
     const common = {
       name,
       nameStart,
@@ -333,7 +332,10 @@ function pythonTokens(text: string): PythonToken[] {
   let cursor = 0;
   let newline = false;
   const emit = (token: PythonToken): void => {
-    tokens.push(newline ? { ...token, newlineBefore: true } : token);
+    if (newline) {
+      token.newlineBefore = true;
+    }
+    tokens.push(token);
     newline = false;
   };
   while (cursor < text.length) {
@@ -416,13 +418,13 @@ interface PythonCallFrame {
   delimiter: "(" | "[" | "{";
 }
 
-const PYTHON_TEMPLATE_ARGUMENTS: Readonly<Record<string, { position: number; keyword: string }>> = {
+const PYTHON_TEMPLATE_ARGUMENTS: Readonly<Record<string, { position?: number; keyword: string }>> = {
   render: { position: 1, keyword: "template_name" },
   render_to_string: { position: 0, keyword: "template_name" },
   get_template: { position: 0, keyword: "template_name" },
   select_template: { position: 0, keyword: "template_name_list" },
   TemplateResponse: { position: 1, keyword: "template" },
-  as_view: { position: -1, keyword: "template_name" },
+  as_view: { keyword: "template_name" },
 };
 
 const EXPRESSION_CONTINUATION_WORDS = new Set(["if", "else", "or", "and", "for", "in", "is", "not"]);
@@ -593,16 +595,6 @@ export function templatePartialReferenceAtOffset(
   );
 }
 
-export function templateNameReferenceAtOffset(
-  text: string,
-  languageId: "django-html" | "python",
-  offset: number,
-): TemplatePartialReference | undefined {
-  return scanTemplatePartialReferences(text, languageId).find(
-    (reference) => offset >= reference.templateNameStart && offset <= reference.templateNameEnd,
-  );
-}
-
 export function scanDocument(text: string): ScanResult {
   const tags: HtmlTag[] = [];
   const attributes: AttributeToken[] = [];
@@ -679,45 +671,33 @@ export function partialAtOffset(
     return direct;
   }
   const closed = scan.partialDefinitions.find(
-    (definition) =>
-      definition.endNameStart !== undefined &&
-      definition.endNameEnd !== undefined &&
-      offset >= definition.endNameStart &&
-      offset <= definition.endNameEnd,
+    ({ endName }) => endName !== undefined && offset >= endName.start && offset <= endName.end,
   );
-  return closed === undefined
+  return closed?.endName === undefined
     ? undefined
-    : {
-        ...closed,
-        nameStart: closed.endNameStart ?? closed.nameStart,
-        nameEnd: closed.endNameEnd ?? closed.nameEnd,
-      };
+    : { ...closed, nameStart: closed.endName.start, nameEnd: closed.endName.end };
 }
 
 export interface PartialNameSpan extends Span {
   kind: "definition" | "reference";
-  /** The name on an `endpartialdef` tag, which mirrors its definition. */
-  isEndTag?: true;
 }
 
-/** All same-file definition and reference name spans that share a partial name. */
-export function partialSpansByName(scan: ScanResult, name: string): PartialNameSpan[] {
+/**
+ * All same-file definition and reference name spans that share a partial name. Names on
+ * `endpartialdef` tags are not included; they are available as `PartialDefinition.endName`.
+ */
+export function partialSpansByName(
+  scan: Pick<ScanResult, "partialDefinitions" | "partialReferences">,
+  name: string,
+): PartialNameSpan[] {
   return [
     ...scan.partialDefinitions
       .filter((definition) => definition.name === name)
-      .flatMap((definition): PartialNameSpan[] => [
-        { start: definition.nameStart, end: definition.nameEnd, kind: "definition" },
-        ...(definition.endNameStart === undefined || definition.endNameEnd === undefined
-          ? []
-          : [
-              {
-                start: definition.endNameStart,
-                end: definition.endNameEnd,
-                kind: "definition" as const,
-                isEndTag: true as const,
-              },
-            ]),
-      ]),
+      .map((definition): PartialNameSpan => ({
+        start: definition.nameStart,
+        end: definition.nameEnd,
+        kind: "definition",
+      })),
     ...scan.partialReferences
       .filter((reference) => reference.name === name)
       .map((reference): PartialNameSpan => ({

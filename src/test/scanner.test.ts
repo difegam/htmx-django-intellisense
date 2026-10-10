@@ -6,7 +6,6 @@ import {
   scanDocument,
   scanTemplatePartialReferences,
   tagAtOffset,
-  templateNameReferenceAtOffset,
   templatePartialReferenceAtOffset,
 } from "../scanner.js";
 
@@ -155,13 +154,6 @@ test("template partial references expose the template-name span", () => {
     ),
     ["authors.html", "a/b.html"],
   );
-});
-
-test("template-name lookup finds the reference under the cursor", () => {
-  const html = `{% include "cards/item.html#result-card" %}`;
-  const offset = html.indexOf("item");
-  assert.equal(templatePartialReferenceAtOffset(html, "django-html", offset), undefined);
-  assert.equal(templateNameReferenceAtOffset(html, "django-html", offset)?.name, "result-card");
 });
 
 test("scanner finds class-based view template_name partials", () => {
